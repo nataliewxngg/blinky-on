@@ -11,7 +11,7 @@ import javax.swing.*;
 import java.io.*;
 import java.util.*;
 
-public class Main extends JPanel implements KeyListener, Runnable {
+public class Main extends JPanel implements Runnable, KeyListener {
 
     // Global Variables
     int state = 0; // 0 - Menu
@@ -31,7 +31,8 @@ public class Main extends JPanel implements KeyListener, Runnable {
     BufferedImage arrow;
     BufferedImage arrowRight;
 
-    BufferedImage wow;
+    ArrayList<BufferedImage> cars = new ArrayList<>();
+    Car player;
 
     Map<Integer, ArrayList<Integer>> arrowStates = new HashMap<>();
     int arrowState = 1;
@@ -43,6 +44,10 @@ public class Main extends JPanel implements KeyListener, Runnable {
     int FPS = 60;
     int screenWidth = 500;
     int screenHeight = 650;
+
+    Boolean upPressed = false;
+    Boolean leftPressed = false;
+    Boolean rightPressed = false;
 
     public Main() {
         // JPanel default settings
@@ -73,16 +78,22 @@ public class Main extends JPanel implements KeyListener, Runnable {
             bg = ImageIO.read(new File("assets/bg.png"));
             arrow = ImageIO.read(new File("assets/arrow.png"));
 
-            arrowStates.put(1, new ArrayList<>(Arrays.asList(200, 262))); // play
-            arrowStates.put(2, new ArrayList<>(Arrays.asList(200, 280))); // shop
-            arrowStates.put(3, new ArrayList<>(Arrays.asList(140, 298))); // instructions
-            arrowStates.put(4, new ArrayList<>(Arrays.asList(190, 316))); // about
-            arrowStates.put(5, new ArrayList<>(Arrays.asList(150, 334))); // highscores
-
             bgHeight = bg.getHeight();
+
+            cars.add(ImageIO.read(new File("assets/cars/blue-car.png")));
+            cars.add(ImageIO.read(new File("assets/cars/red-car.png")));
+            cars.add(ImageIO.read(new File("assets/cars/red-car-with-white-stripes.png")));
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        arrowStates.put(1, new ArrayList<>(Arrays.asList(200, 262))); // play
+        arrowStates.put(2, new ArrayList<>(Arrays.asList(200, 280))); // shop
+        arrowStates.put(3, new ArrayList<>(Arrays.asList(140, 298))); // instructions
+        arrowStates.put(4, new ArrayList<>(Arrays.asList(190, 316))); // about
+        arrowStates.put(5, new ArrayList<>(Arrays.asList(150, 334))); // highscores
+
+        player = new Car(cars.get(0), 250, 700, false);
     }
 
     public void update() {
@@ -109,7 +120,17 @@ public class Main extends JPanel implements KeyListener, Runnable {
             g.drawImage(menu, 0, 0, null);
             g.drawImage(arrow, arrowStates.get(arrowState).get(0), arrowStates.get(arrowState).get(1), null);
 
-            // caaaaaaaaaaaaaaaar
+            player.draw(g);
+            if (player.getY() > 500) {
+                player.move(2, "up");
+            } else if (player.getY() > 460) {
+                player.move(1, "up");
+            }
+
+            if (leftPressed && player.getX() > 85)
+                player.move(2, "left");
+            if (rightPressed && player.getX() < 330)
+                player.move(2, "right");
 
         } else if (state == 1) { // 1 - Store/MarketPlace
 
@@ -145,6 +166,19 @@ public class Main extends JPanel implements KeyListener, Runnable {
             else if (e.getKeyCode() == KeyEvent.VK_ENTER)
                 // edit this later
                 System.out.println("edit!");
+            else if (e.getKeyCode() == KeyEvent.VK_LEFT)
+                leftPressed = true;
+            else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+                rightPressed = true;
+        }
+    }
+
+    public void keyReleased(KeyEvent e) {
+        if (state == 0) {
+            if (e.getKeyCode() == KeyEvent.VK_LEFT)
+                leftPressed = false;
+            else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+                rightPressed = false;
         }
     }
 
@@ -173,12 +207,5 @@ public class Main extends JPanel implements KeyListener, Runnable {
     }
 
     public void keyTyped(KeyEvent e) {
-    }
-
-    public void keyReleased(KeyEvent e) {
-    }
-
-    public void mouseClicked(MouseEvent e) {
-
     }
 }
