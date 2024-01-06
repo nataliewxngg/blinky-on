@@ -5,16 +5,17 @@ public class Car {
     private BufferedImage car;
     private int x;
     private int y;
-    private Boolean isPlayer; // use later on to move all cars that are !isPlayer by y coord
+    private int speed;
 
-    public Car(BufferedImage car, int x, int y, Boolean isPlayer) {
+    public Car(BufferedImage car, int x, int y, int speed) {
         this.car = car;
         this.x = x;
         this.y = y;
-        this.isPlayer = isPlayer;
+        this.speed = speed;
     }
 
     public void draw(Graphics g) {
+        y += speed;
         g.drawImage(car, x, y, null);
     }
 
@@ -25,6 +26,10 @@ public class Car {
 
     public int getY() {
         return y;
+    }
+
+    public void speedUp() {
+        speed++;
     }
 
     public void move(int factor, String direction) {

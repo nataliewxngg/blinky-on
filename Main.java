@@ -31,23 +31,31 @@ public class Main extends JPanel implements Runnable, KeyListener {
     BufferedImage arrow;
     BufferedImage arrowRight;
 
+    Random random = new Random();
+
     ArrayList<BufferedImage> cars = new ArrayList<>();
     Car player;
 
     Map<Integer, ArrayList<Integer>> arrowStates = new HashMap<>();
     int arrowState = 1;
 
+    LinkedList<Car> enemies = new LinkedList<>();
+
     int bgHeight;
     int y = 0; // reference point
     double speed = 1;
+    Boolean speedUp = false;
 
     int FPS = 60;
     int screenWidth = 500;
     int screenHeight = 650;
 
     Boolean upPressed = false;
+    Boolean downPressed = false;
     Boolean leftPressed = false;
     Boolean rightPressed = false;
+
+    int score = 0;
 
     public Main() {
         // JPanel default settings
@@ -81,8 +89,18 @@ public class Main extends JPanel implements Runnable, KeyListener {
             bgHeight = bg.getHeight();
 
             cars.add(ImageIO.read(new File("assets/cars/blue-car.png")));
-            cars.add(ImageIO.read(new File("assets/cars/red-car.png")));
+            cars.add(ImageIO.read(new File("assets/cars/gray-car.png")));
+            cars.add(ImageIO.read(new File("assets/cars/police-car.png")));
             cars.add(ImageIO.read(new File("assets/cars/red-car-with-white-stripes.png")));
+            cars.add(ImageIO.read(new File("assets/cars/red-car.png")));
+            cars.add(ImageIO.read(new File("assets/cars/red-truck.png")));
+            cars.add(ImageIO.read(new File("assets/cars/rusty-white-van.png")));
+            cars.add(ImageIO.read(new File("assets/cars/school-bus.png")));
+            cars.add(ImageIO.read(new File("assets/cars/white-truck.png")));
+            cars.add(ImageIO.read(new File("assets/cars/white-van.png")));
+            cars.add(ImageIO.read(new File("assets/cars/yellow-cab.png")));
+            cars.add(ImageIO.read(new File("assets/cars/yellow-car.png")));
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -93,7 +111,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
         arrowStates.put(4, new ArrayList<>(Arrays.asList(190, 316))); // about
         arrowStates.put(5, new ArrayList<>(Arrays.asList(150, 334))); // highscores
 
-        player = new Car(cars.get(0), 250, 700, false);
+        player = new Car(cars.get(0), 250, 700, 0);
     }
 
     public void update() {
@@ -144,6 +162,69 @@ public class Main extends JPanel implements Runnable, KeyListener {
             g.drawImage(bg, 0, y, null);
             g.drawImage(bg, 0, y + bgHeight, null);
             g.drawImage(bg, 0, y - bgHeight, null);
+
+            // player enter screen
+            player.draw(g);
+            if (player.getY() > 500) {
+                player.move(2, "up");
+            } else if (player.getY() > 460) {
+                player.move(1, "up");
+            }
+
+            // movement
+            if (leftPressed && player.getX() > 85)
+                player.move(2, "left");
+            if (rightPressed && player.getX() < 330)
+                player.move(2, "right");
+
+            // score and gradual speed ups - SORT IN MAP LATER?
+            score++;
+            if (score == 160) {
+                speed = 6;
+                speedUp = true;
+            } else if (score == 100) {
+                speed = 5;
+                speedUp = true;
+            } else if (score == 60) {
+                speed = 4;
+                speedUp = true;
+            } else if (score == 30) {
+                speed = 3;
+                speedUp = true;
+            } else if (score == 10) {
+                speed = 2;
+                speedUp = true;
+            }
+
+            // spawn new cars
+            if (score > 10) {
+                int rand = random.nextInt(151); // random int from 1-150
+                int rand1;
+                int[] x = { 90, 170, 250, 330 };
+
+                if (rand == 59) {
+                    do {
+                        rand = random.nextInt(4);
+                        rand1 = random.nextInt(4);
+                    } while (rand1 == 0);
+
+                    enemies.add(new Car(cars.get(random.nextInt(cars.size())), x[rand], -250, rand1));
+                }
+            }
+
+            // display all "enemies"
+            for (int i = 0; i < enemies.size(); i++) {
+                if (enemies.get(i).getY() > 650) {
+                    enemies.remove(i);
+                } else {
+                    if (speedUp) {
+                        enemies.get(i).speedUp();
+                    }
+                    enemies.get(i).draw(g);
+                }
+            }
+            speedUp = false;
+
         } else if (state == 6) { // 6 - Pause
 
         } else if (state == 7) { // 7 - Game Over
@@ -152,7 +233,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
     }
 
     public void keyPressed(KeyEvent e) {
-        if (state == 0) {
+        if (state == 0) { // 0 - Menu
             if (e.getKeyCode() == KeyEvent.VK_DOWN)
                 if (arrowState == 5)
                     arrowState = 1;
@@ -163,22 +244,56 @@ public class Main extends JPanel implements Runnable, KeyListener {
                     arrowState = 5;
                 else
                     arrowState--;
-            else if (e.getKeyCode() == KeyEvent.VK_ENTER)
-                // edit this later
-                System.out.println("edit!");
-            else if (e.getKeyCode() == KeyEvent.VK_LEFT)
+            else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                if (arrowState == 1)
+                    state = 5;
+            } else if (e.getKeyCode() == KeyEvent.VK_LEFT)
                 leftPressed = true;
             else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
                 rightPressed = true;
+        } else if (state == 1) { // 1 - Store/MarketPlace
+
+        } else if (state == 2) { // 2 - Past HighScores
+
+        } else if (state == 3) { // 3 - Instructions
+
+        } else if (state == 4) { // 4 - About
+
+        } else if (state == 5) { // 5 - In-Game
+            if (e.getKeyCode() == KeyEvent.VK_LEFT)
+                leftPressed = true;
+            else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+                rightPressed = true;
+        } else if (state == 6) { // 6 - Pause
+
+        } else if (state == 7) { // 7 - Game Over
+
         }
     }
 
     public void keyReleased(KeyEvent e) {
-        if (state == 0) {
+        if (state == 0) { // 0 - Menu
             if (e.getKeyCode() == KeyEvent.VK_LEFT)
                 leftPressed = false;
             else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
                 rightPressed = false;
+        } else if (state == 1) { // 1 - Store/MarketPlace
+
+        } else if (state == 2) { // 2 - Past HighScores
+
+        } else if (state == 3) { // 3 - Instructions
+
+        } else if (state == 4) { // 4 - About
+
+        } else if (state == 5) { // 5 - In-Game
+            if (e.getKeyCode() == KeyEvent.VK_LEFT)
+                leftPressed = false;
+            else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+                rightPressed = false;
+        } else if (state == 6) { // 6 - Pause
+
+        } else if (state == 7) { // 7 - Game Over
+
         }
     }
 
