@@ -14,27 +14,35 @@ import java.util.*;
 public class Main extends JPanel implements KeyListener, Runnable {
 
     // Global Variables
-    public static int state = 0; // 0 - Menu
-                                 // 1 - Store/MarketPlace
-                                 // 2 - Past HighScores
-                                 // 3 - Instructions
-                                 // 4 - About
-                                 // 5 - In-Game
-                                 // 6 - Pause
-                                 // 7 - Game Over
-    public static BufferedImage[] stateImages = new BufferedImage[7];
+    int state = 0; // 0 - Menu
+                   // 1 - Store/MarketPlace
+                   // 2 - Past HighScores
+                   // 3 - Instructions
+                   // 4 - About
+                   // 5 - In-Game
+                   // 6 - Pause
+                   // 7 - Game Over
 
-    public static JFrame frame;
-    public static Thread thread;
+    JFrame frame;
+    Thread thread;
 
-    public static BufferedImage bg;
-    public static int bgHeight;
-    public static int y = 0; // reference point
-    public static int speed = 1;
+    BufferedImage bg;
+    BufferedImage menu;
+    BufferedImage arrow;
+    BufferedImage arrowRight;
 
-    public static int FPS = 144;
-    public static int screenWidth = 500;
-    public static int screenHeight = 650;
+    BufferedImage wow;
+
+    Map<Integer, ArrayList<Integer>> arrowStates = new HashMap<>();
+    int arrowState = 1;
+
+    int bgHeight;
+    int y = 0; // reference point
+    double speed = 1;
+
+    int FPS = 60;
+    int screenWidth = 500;
+    int screenHeight = 650;
 
     public Main() {
         // JPanel default settings
@@ -61,7 +69,16 @@ public class Main extends JPanel implements KeyListener, Runnable {
     public void initialize() {
         // setups before the game starts running
         try {
+            menu = ImageIO.read(new File("assets/menu.png"));
             bg = ImageIO.read(new File("assets/bg.png"));
+            arrow = ImageIO.read(new File("assets/arrow.png"));
+
+            arrowStates.put(1, new ArrayList<>(Arrays.asList(200, 262))); // play
+            arrowStates.put(2, new ArrayList<>(Arrays.asList(200, 280))); // shop
+            arrowStates.put(3, new ArrayList<>(Arrays.asList(140, 298))); // instructions
+            arrowStates.put(4, new ArrayList<>(Arrays.asList(190, 316))); // about
+            arrowStates.put(5, new ArrayList<>(Arrays.asList(150, 334))); // highscores
+
             bgHeight = bg.getHeight();
         } catch (IOException e) {
             e.printStackTrace();
@@ -79,26 +96,59 @@ public class Main extends JPanel implements KeyListener, Runnable {
 
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        g.drawImage(stateImages[state], 0, 0, null);
 
         Font font = new Font("Press Start 2P", Font.PLAIN, 25);
         g.setFont(font);
         g.setColor(Color.WHITE);
 
-        if (state == 5) {
+        if (state == 0) { // 0 - Menu
             g.drawImage(bg, 0, y, null);
             g.drawImage(bg, 0, y + bgHeight, null);
             g.drawImage(bg, 0, y - bgHeight, null);
+
+            g.drawImage(menu, 0, 0, null);
+            g.drawImage(arrow, arrowStates.get(arrowState).get(0), arrowStates.get(arrowState).get(1), null);
+
+            // caaaaaaaaaaaaaaaar
+
+        } else if (state == 1) { // 1 - Store/MarketPlace
+
+        } else if (state == 2) { // 2 - Past HighScores
+
+        } else if (state == 3) { // 3 - Instructions
+
+        } else if (state == 4) { // 4 - About
+
+        } else if (state == 5) { // 5 - In-Game
+            g.drawImage(bg, 0, y, null);
+            g.drawImage(bg, 0, y + bgHeight, null);
+            g.drawImage(bg, 0, y - bgHeight, null);
+        } else if (state == 6) { // 6 - Pause
+
+        } else if (state == 7) { // 7 - Game Over
+
+        }
+    }
+
+    public void keyPressed(KeyEvent e) {
+        if (state == 0) {
+            if (e.getKeyCode() == KeyEvent.VK_DOWN)
+                if (arrowState == 5)
+                    arrowState = 1;
+                else
+                    arrowState++;
+            else if (e.getKeyCode() == KeyEvent.VK_UP)
+                if (arrowState == 1)
+                    arrowState = 5;
+                else
+                    arrowState--;
+            else if (e.getKeyCode() == KeyEvent.VK_ENTER)
+                // edit this later
+                System.out.println("edit!");
         }
     }
 
     public static void main(String[] args) throws IOException {
-        // Load Images
-        try {
-        } catch (Exception e) {
-            System.out.println("Something wrong with the image!");
-        }
-
         // Font
         try {
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
@@ -123,17 +173,12 @@ public class Main extends JPanel implements KeyListener, Runnable {
     }
 
     public void keyTyped(KeyEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'keyTyped'");
-    }
-
-    public void keyPressed(KeyEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'keyPressed'");
     }
 
     public void keyReleased(KeyEvent e) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'keyReleased'");
+    }
+
+    public void mouseClicked(MouseEvent e) {
+
     }
 }
