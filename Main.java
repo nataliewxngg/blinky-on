@@ -39,12 +39,14 @@ public class Main extends JPanel implements Runnable, KeyListener {
     Map<Integer, ArrayList<Integer>> arrowStates = new HashMap<>();
     int arrowState = 1;
 
+    Map<Integer, Integer> speeds = new HashMap<>(); // speed in relation to score
+
     LinkedList<Car> enemies = new LinkedList<>();
 
     int bgHeight;
     int y = 0; // reference point
     double speed = 1;
-    Boolean speedUp = false;
+    double minSpeed = 1;
 
     int FPS = 60;
     int screenWidth = 500;
@@ -56,6 +58,22 @@ public class Main extends JPanel implements Runnable, KeyListener {
     Boolean rightPressed = false;
 
     int score = 0;
+
+    public static Boolean checkCollision(Car car, LinkedList<Car> nowEnemies) {
+        Car currentCar;
+        for (int i = 0; i < nowEnemies.size(); i++) {
+            currentCar = nowEnemies.get(i);
+
+            if (car.getX() < currentCar.getX() + currentCar.getCar().getWidth() &&
+                    car.getX() + car.getCar().getWidth() > currentCar.getX() &&
+                    car.getY() < currentCar.getY() + currentCar.getCar().getHeight() &&
+                    car.getY() + car.getCar().getHeight() > currentCar.getY()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     public Main() {
         // JPanel default settings
@@ -110,6 +128,14 @@ public class Main extends JPanel implements Runnable, KeyListener {
         arrowStates.put(3, new ArrayList<>(Arrays.asList(140, 298))); // instructions
         arrowStates.put(4, new ArrayList<>(Arrays.asList(190, 316))); // about
         arrowStates.put(5, new ArrayList<>(Arrays.asList(150, 334))); // highscores
+
+        speeds.put(10, 2);
+        speeds.put(30, 3);
+        speeds.put(60, 4);
+        speeds.put(100, 5);
+        speeds.put(160, 6);
+        speeds.put(300, 7);
+        speeds.put(600, 8);
 
         player = new Car(cars.get(0), 250, 700, 0);
     }
@@ -177,28 +203,13 @@ public class Main extends JPanel implements Runnable, KeyListener {
             if (rightPressed && player.getX() < 330)
                 player.move(2, "right");
 
-            // score and gradual speed ups - SORT IN MAP LATER?
-            score++;
-            if (score == 160) {
-                speed = 6;
-                speedUp = true;
-            } else if (score == 100) {
-                speed = 5;
-                speedUp = true;
-            } else if (score == 60) {
-                speed = 4;
-                speedUp = true;
-            } else if (score == 30) {
-                speed = 3;
-                speedUp = true;
-            } else if (score == 10) {
-                speed = 2;
-                speedUp = true;
-            }
+            // player collision
+            if (checkCollision(player, enemies))
+                state = 7;
 
             // spawn new cars
             if (score > 10) {
-                int rand = random.nextInt(151); // random int from 1-150
+                int rand = random.nextInt(101); // random int from 0-100
                 int rand1;
                 int[] x = { 90, 170, 250, 330 };
 
@@ -208,7 +219,12 @@ public class Main extends JPanel implements Runnable, KeyListener {
                         rand1 = random.nextInt(4);
                     } while (rand1 == 0);
 
-                    enemies.add(new Car(cars.get(random.nextInt(cars.size())), x[rand], -250, rand1));
+                    Car newCar = new Car(cars.get(random.nextInt(cars.size())), x[rand], -250, rand1);
+
+                    if (!checkCollision(newCar, enemies))
+                        enemies.add(newCar);
+                    else
+                        System.out.println("Collision occured while spawning!");
                 }
             }
 
@@ -217,13 +233,21 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 if (enemies.get(i).getY() > 650) {
                     enemies.remove(i);
                 } else {
-                    if (speedUp) {
-                        enemies.get(i).speedUp();
-                    }
+                    g.drawRect(enemies.get(i).getX(), enemies.get(i).getY(),
+                            enemies.get(i).getCar().getWidth(), enemies.get(i).getCar().getHeight());
                     enemies.get(i).draw(g);
                 }
             }
-            speedUp = false;
+
+            score++;
+            for (int i = 0; i < speeds.size(); i++) {
+                if (speeds.containsKey(score)) {
+                    speed = speeds.get(score);
+                    minSpeed = speed;
+                }
+            }
+
+            g.drawString("score: " + Integer.toString(score), 10, 40);
 
         } else if (state == 6) { // 6 - Pause
 

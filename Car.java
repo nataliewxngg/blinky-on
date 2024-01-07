@@ -20,6 +20,10 @@ public class Car {
     }
 
     // Getters and Setters
+    public BufferedImage getCar() {
+        return car;
+    }
+
     public int getX() {
         return x;
     }
