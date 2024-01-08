@@ -2,6 +2,7 @@
 // Due Sunday, January 21, 2024
 
 // Blinky-on
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
@@ -29,7 +30,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
     BufferedImage bg;
     BufferedImage menu;
     BufferedImage arrow;
-    BufferedImage arrowRight;
+    BufferedImage gameOver;
 
     Random random = new Random();
 
@@ -58,6 +59,16 @@ public class Main extends JPanel implements Runnable, KeyListener {
     Boolean rightPressed = false;
 
     int score = 0;
+
+    public void resetVars() {
+        player = new Car(cars.get(0), 250, 700, 0);
+        enemies.clear();
+        speed = 1;
+        arrowState = 1;
+        score = 0;
+
+        rightPressed=leftPressed=false;
+    }
 
     public static Boolean checkCollision(Car car, LinkedList<Car> nowEnemies) {
         Car currentCar;
@@ -103,6 +114,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             menu = ImageIO.read(new File("assets/menu.png"));
             bg = ImageIO.read(new File("assets/bg.png"));
             arrow = ImageIO.read(new File("assets/arrow.png"));
+            gameOver = ImageIO.read(new File("assets/game-over.png"));
 
             bgHeight = bg.getHeight();
 
@@ -142,11 +154,13 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
     public void update() {
         // update stuff
-        y += speed;
-        if (y < -bgHeight)
-            y = 0;
-        else if (y > bgHeight)
-            y = 0;
+        if (state != 7) {
+            y += speed;
+            if (y < -bgHeight)
+                y = 0;
+            else if (y > bgHeight)
+                y = 0;
+        }
     }
 
     public void paintComponent(Graphics g) {
@@ -252,7 +266,17 @@ public class Main extends JPanel implements Runnable, KeyListener {
         } else if (state == 6) { // 6 - Pause
 
         } else if (state == 7) { // 7 - Game Over
+            g.drawImage(bg, 0, y, null);
+            g.drawImage(bg, 0, y + bgHeight, null);
+            g.drawImage(bg, 0, y - bgHeight, null);
 
+            player.draw(g);
+            for (int i = 0; i < enemies.size(); i++) {
+                enemies.get(i).stop();
+                enemies.get(i).draw(g);
+            }
+
+            g.drawImage(gameOver, 0, 0, null);
         }
     }
 
@@ -291,7 +315,13 @@ public class Main extends JPanel implements Runnable, KeyListener {
         } else if (state == 6) { // 6 - Pause
 
         } else if (state == 7) { // 7 - Game Over
-
+            if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                resetVars();
+                state = 0;
+            } else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                resetVars();
+                state = 5;
+            }
         }
     }
 
