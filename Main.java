@@ -29,8 +29,15 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
     BufferedImage bg;
     BufferedImage menu;
-    BufferedImage arrow;
     BufferedImage gameOver;
+    BufferedImage instructions;
+    BufferedImage about;
+    BufferedImage highscores;
+    BufferedImage arrow;
+    BufferedImage coin;
+
+    Font font = new Font("Press Start 2P", Font.PLAIN, 20);
+    Font smallFont = new Font("Press Start 2P", Font.PLAIN, 14);
 
     Random random = new Random();
 
@@ -53,8 +60,6 @@ public class Main extends JPanel implements Runnable, KeyListener {
     int screenWidth = 500;
     int screenHeight = 650;
 
-    Boolean upPressed = false;
-    Boolean downPressed = false;
     Boolean leftPressed = false;
     Boolean rightPressed = false;
 
@@ -67,7 +72,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
         arrowState = 1;
         score = 0;
 
-        rightPressed=leftPressed=false;
+        rightPressed = leftPressed = false;
     }
 
     public static Boolean checkCollision(Car car, LinkedList<Car> nowEnemies) {
@@ -84,6 +89,25 @@ public class Main extends JPanel implements Runnable, KeyListener {
         }
 
         return false;
+    }
+
+    public static String getHighScores(String fileName) {
+        int count = 1;
+        String s;
+        String output = "";
+        try {
+            BufferedReader in = new BufferedReader(new FileReader("highscores.txt"));
+            while ((s = in.readLine()) != null && count < 11) {
+                output += count + ") " + s + "\n";
+                count++;
+            }
+            if (output.equals(""))
+                output = "   YOU HAVE NO\n     EXISTING\n  HIGHSCORES YET!";
+            in.close();
+        } catch (IOException e) {
+            System.out.println("highscores.txt is missing!");
+        }
+        return output;
     }
 
     public Main() {
@@ -115,32 +139,36 @@ public class Main extends JPanel implements Runnable, KeyListener {
             bg = ImageIO.read(new File("assets/bg.png"));
             arrow = ImageIO.read(new File("assets/arrow.png"));
             gameOver = ImageIO.read(new File("assets/game-over.png"));
+            instructions = ImageIO.read(new File("assets/instructions.png"));
+            about = ImageIO.read(new File("assets/about.png"));
+            highscores = ImageIO.read(new File("assets/highscores.png"));
+            coin = ImageIO.read(new File("assets/coin.png"));
 
             bgHeight = bg.getHeight();
 
-            cars.add(ImageIO.read(new File("assets/cars/blue-car.png")));
-            cars.add(ImageIO.read(new File("assets/cars/gray-car.png")));
-            cars.add(ImageIO.read(new File("assets/cars/police-car.png")));
-            cars.add(ImageIO.read(new File("assets/cars/red-car-with-white-stripes.png")));
-            cars.add(ImageIO.read(new File("assets/cars/red-car.png")));
-            cars.add(ImageIO.read(new File("assets/cars/red-truck.png")));
             cars.add(ImageIO.read(new File("assets/cars/rusty-white-van.png")));
-            cars.add(ImageIO.read(new File("assets/cars/school-bus.png")));
-            cars.add(ImageIO.read(new File("assets/cars/white-truck.png")));
             cars.add(ImageIO.read(new File("assets/cars/white-van.png")));
-            cars.add(ImageIO.read(new File("assets/cars/yellow-cab.png")));
+            cars.add(ImageIO.read(new File("assets/cars/blue-car.png")));
+            cars.add(ImageIO.read(new File("assets/cars/red-car.png")));
             cars.add(ImageIO.read(new File("assets/cars/yellow-car.png")));
-
+            cars.add(ImageIO.read(new File("assets/cars/gray-car.png")));
+            cars.add(ImageIO.read(new File("assets/cars/yellow-cab.png")));
+            cars.add(ImageIO.read(new File("assets/cars/white-truck.png")));
+            cars.add(ImageIO.read(new File("assets/cars/red-truck.png")));
+            cars.add(ImageIO.read(new File("assets/cars/school-bus.png")));
+            cars.add(ImageIO.read(new File("assets/cars/red-car-with-white-stripes.png")));
+            cars.add(ImageIO.read(new File("assets/cars/police-car.png")));
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        arrowStates.put(1, new ArrayList<>(Arrays.asList(200, 262))); // play
-        arrowStates.put(2, new ArrayList<>(Arrays.asList(200, 280))); // shop
-        arrowStates.put(3, new ArrayList<>(Arrays.asList(140, 298))); // instructions
-        arrowStates.put(4, new ArrayList<>(Arrays.asList(190, 316))); // about
-        arrowStates.put(5, new ArrayList<>(Arrays.asList(150, 334))); // highscores
+        arrowStates.put(1, new ArrayList<>(Arrays.asList(200, 262))); // 1-play
+        arrowStates.put(2, new ArrayList<>(Arrays.asList(200, 280))); // 2-shop
+        arrowStates.put(3, new ArrayList<>(Arrays.asList(140, 298))); // 3-instructions
+        arrowStates.put(4, new ArrayList<>(Arrays.asList(190, 316))); // 4-about
+        arrowStates.put(5, new ArrayList<>(Arrays.asList(150, 334))); // 5-highscores
 
+        // initial gradual acceleration
         speeds.put(10, 2);
         speeds.put(30, 3);
         speeds.put(60, 4);
@@ -148,6 +176,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
         speeds.put(160, 6);
         speeds.put(300, 7);
         speeds.put(600, 8);
+        speeds.put(1000, 9);
 
         player = new Car(cars.get(0), 250, 700, 0);
     }
@@ -165,58 +194,56 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-
-        Font font = new Font("Press Start 2P", Font.PLAIN, 25);
         g.setFont(font);
         g.setColor(Color.WHITE);
 
-        if (state == 0) { // 0 - Menu
-            g.drawImage(bg, 0, y, null);
-            g.drawImage(bg, 0, y + bgHeight, null);
-            g.drawImage(bg, 0, y - bgHeight, null);
+        g.drawImage(bg, 0, y, null);
+        g.drawImage(bg, 0, y + bgHeight, null);
+        g.drawImage(bg, 0, y - bgHeight, null);
+        player.draw(g);
 
-            g.drawImage(menu, 0, 0, null);
-            g.drawImage(arrow, arrowStates.get(arrowState).get(0), arrowStates.get(arrowState).get(1), null);
-
-            player.draw(g);
+        if (state != 6 && state != 7) {
+            // player's ultimate, coolio introduction!!!!
             if (player.getY() > 500) {
                 player.move(2, "up");
             } else if (player.getY() > 460) {
                 player.move(1, "up");
             }
-
+            // player's movement
             if (leftPressed && player.getX() > 85)
                 player.move(2, "left");
             if (rightPressed && player.getX() < 330)
                 player.move(2, "right");
 
+            if (state != 5)
+                g.drawImage(arrow, arrowStates.get(arrowState).get(0), arrowStates.get(arrowState).get(1), null);
+        }
+        if (state == 0) { // 0 - Menu
+            g.drawImage(menu, 0, 0, null);
+            // g.drawImage(coin, 360, 10, null);
         } else if (state == 1) { // 1 - Store/MarketPlace
 
         } else if (state == 2) { // 2 - Past HighScores
-
-        } else if (state == 3) { // 3 - Instructions
-
-        } else if (state == 4) { // 4 - About
-
-        } else if (state == 5) { // 5 - In-Game
-            g.drawImage(bg, 0, y, null);
-            g.drawImage(bg, 0, y + bgHeight, null);
-            g.drawImage(bg, 0, y - bgHeight, null);
-
-            // player enter screen
-            player.draw(g);
-            if (player.getY() > 500) {
-                player.move(2, "up");
-            } else if (player.getY() > 460) {
-                player.move(1, "up");
+            g.drawImage(highscores, 0, 0, null);
+            g.setFont(smallFont);
+            String s = getHighScores("highscores.txt");
+            int n = 0;
+            for (String x : s.split("\n")) {
+                if (n == 85)
+                    n = 450;
+                if (n > 85) {
+                    g.drawString(x, 270, n);
+                    n += 17;
+                } else {
+                    g.drawString(x, 130, 450 + n);
+                    n += 17;
+                }
             }
-
-            // movement
-            if (leftPressed && player.getX() > 85)
-                player.move(2, "left");
-            if (rightPressed && player.getX() < 330)
-                player.move(2, "right");
-
+        } else if (state == 3) { // 3 - Instructions
+            g.drawImage(instructions, 0, 0, null);
+        } else if (state == 4) { // 4 - About
+            g.drawImage(about, 0, 0, null);
+        } else if (state == 5) { // 5 - In-Game
             // player collision
             if (checkCollision(player, enemies))
                 state = 7;
@@ -261,21 +288,15 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 }
             }
 
-            g.drawString("score: " + Integer.toString(score), 10, 40);
+            g.drawString("score: " + Integer.toString(score), 20, 40);
 
         } else if (state == 6) { // 6 - Pause
 
         } else if (state == 7) { // 7 - Game Over
-            g.drawImage(bg, 0, y, null);
-            g.drawImage(bg, 0, y + bgHeight, null);
-            g.drawImage(bg, 0, y - bgHeight, null);
-
-            player.draw(g);
             for (int i = 0; i < enemies.size(); i++) {
                 enemies.get(i).stop();
                 enemies.get(i).draw(g);
             }
-
             g.drawImage(gameOver, 0, 0, null);
         }
     }
@@ -295,18 +316,27 @@ public class Main extends JPanel implements Runnable, KeyListener {
             else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                 if (arrowState == 1)
                     state = 5;
+                else if (arrowState == 2)
+                    state = 1;
+                else if (arrowState == 3)
+                    state = 3;
+                else if (arrowState == 4)
+                    state = 4;
+                else if (arrowState == 5)
+                    state = 2;
             } else if (e.getKeyCode() == KeyEvent.VK_LEFT)
                 leftPressed = true;
             else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
                 rightPressed = true;
         } else if (state == 1) { // 1 - Store/MarketPlace
 
-        } else if (state == 2) { // 2 - Past HighScores
-
-        } else if (state == 3) { // 3 - Instructions
-
-        } else if (state == 4) { // 4 - About
-
+        } else if (state == 2 || state == 3 || state == 4) { // 3 - Instructions
+            if (e.getKeyCode() == KeyEvent.VK_ENTER)
+                state = 0;
+            else if (e.getKeyCode() == KeyEvent.VK_LEFT)
+                leftPressed = true;
+            else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+                rightPressed = true;
         } else if (state == 5) { // 5 - In-Game
             if (e.getKeyCode() == KeyEvent.VK_LEFT)
                 leftPressed = true;
@@ -326,18 +356,12 @@ public class Main extends JPanel implements Runnable, KeyListener {
     }
 
     public void keyReleased(KeyEvent e) {
-        if (state == 0) { // 0 - Menu
+        if (state == 0 || state == 2 || state == 3 || state == 4) { // 0 - Menu
             if (e.getKeyCode() == KeyEvent.VK_LEFT)
                 leftPressed = false;
             else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
                 rightPressed = false;
         } else if (state == 1) { // 1 - Store/MarketPlace
-
-        } else if (state == 2) { // 2 - Past HighScores
-
-        } else if (state == 3) { // 3 - Instructions
-
-        } else if (state == 4) { // 4 - About
 
         } else if (state == 5) { // 5 - In-Game
             if (e.getKeyCode() == KeyEvent.VK_LEFT)
@@ -345,8 +369,6 @@ public class Main extends JPanel implements Runnable, KeyListener {
             else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
                 rightPressed = false;
         } else if (state == 6) { // 6 - Pause
-
-        } else if (state == 7) { // 7 - Game Over
 
         }
     }
