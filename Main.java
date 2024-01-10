@@ -11,6 +11,7 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.io.*;
 import java.util.*;
+import java.util.Queue;
 
 public class Main extends JPanel implements Runnable, KeyListener {
 
@@ -36,13 +37,18 @@ public class Main extends JPanel implements Runnable, KeyListener {
     BufferedImage store;
     BufferedImage arrow;
     BufferedImage coin;
+    BufferedImage steeringWheel;
 
     Font font = new Font("Press Start 2P", Font.PLAIN, 20);
-    Font smallFont = new Font("Press Start 2P", Font.PLAIN, 14);
+    Font smallFont = new Font("Press Start 2P", Font.PLAIN, 13);
 
     Random random = new Random();
 
     ArrayList<BufferedImage> cars = new ArrayList<>();
+    ArrayList<BufferedImage> smallCars = new ArrayList<>();
+    char[] status = new char[12];
+    int[] costs = new int[12];
+    int[] handlings = new int[12];
     Car player;
 
     Map<Integer, ArrayList<Integer>> arrowStates = new HashMap<>();
@@ -68,10 +74,11 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
     int coins;
     int playerIndex;
-    int selected = 0;
+    int selected;
+    Boolean boughtFailed = false;
 
     public void resetVars() {
-        player = new Car(cars.get(0), 250, 700, 0);
+        player = new Car(cars.get(playerIndex), 250, 700, 0);
         enemies.clear();
         speed = 1;
         arrowState = 1;
@@ -115,6 +122,28 @@ public class Main extends JPanel implements Runnable, KeyListener {
         return output;
     }
 
+    public void updateStats() {
+        try {
+            PrintWriter out = new PrintWriter(new File("stats.txt"));
+
+            out.println(coins);
+            out.println(playerIndex);
+
+            for (int i = 0; i < 36; i++) {
+                if (i < 12)
+                    out.println(status[i]);
+                else if (i < 24)
+                    out.println(costs[i - 12]);
+                else if (i < 36)
+                    out.println(handlings[i - 24]);
+            }
+
+            out.close();
+        } catch (IOException e) {
+            System.out.println("stats.txt is missing!");
+        }
+    }
+
     public Main() {
         // JPanel default settings
         setPreferredSize(new Dimension(screenWidth, screenHeight));
@@ -149,6 +178,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             highscores = ImageIO.read(new File("assets/highscores.png"));
             store = ImageIO.read(new File("assets/store.png"));
             coin = ImageIO.read(new File("assets/coin.png"));
+            steeringWheel = ImageIO.read(new File("assets/steering-wheel.png"));
 
             bgHeight = bg.getHeight();
 
@@ -164,6 +194,11 @@ public class Main extends JPanel implements Runnable, KeyListener {
             cars.add(ImageIO.read(new File("assets/cars/school-bus.png")));
             cars.add(ImageIO.read(new File("assets/cars/red-car-with-white-stripes.png")));
             cars.add(ImageIO.read(new File("assets/cars/police-car.png")));
+
+            smallCars.add(ImageIO.read(new File("assets/cars/small/white-truck.png")));
+            smallCars.add(ImageIO.read(new File("assets/cars/small/red-truck.png")));
+            smallCars.add(ImageIO.read(new File("assets/cars/small/school-bus.png")));
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -184,7 +219,25 @@ public class Main extends JPanel implements Runnable, KeyListener {
         speeds.put(600, 8);
         speeds.put(1000, 9);
 
-        player = new Car(cars.get(0), 250, 700, 0);
+        try {
+            BufferedReader in = new BufferedReader(new FileReader("stats.txt"));
+            coins = Integer.parseInt(in.readLine());
+            playerIndex = Integer.parseInt(in.readLine());
+            for (int i = 0; i < 36; i++) {
+                if (i < 12)
+                    status[i] = in.readLine().charAt(0);
+                else if (i < 24) {
+                    costs[i - 12] = Integer.parseInt(in.readLine());
+                    System.out.println(costs[i - 12]);
+                } else if (i < 36)
+                    handlings[i - 24] = Integer.parseInt(in.readLine());
+            }
+            in.close();
+        } catch (IOException e) {
+            System.out.println("stats.txt is missing!");
+        }
+        player = new Car(cars.get(playerIndex), 250, 700, 0);
+        selected = playerIndex;
     }
 
     public void update() {
@@ -206,7 +259,11 @@ public class Main extends JPanel implements Runnable, KeyListener {
         g.drawImage(bg, 0, y, null);
         g.drawImage(bg, 0, y + bgHeight, null);
         g.drawImage(bg, 0, y - bgHeight, null);
+
         player.draw(g);
+
+        g.drawImage(coin, 390, 10, null);
+        g.drawString(coins + "", 420, 34);
 
         if (state != 6 && state != 7) {
             // player's ultimate, coolio introduction!!!!
@@ -217,19 +274,43 @@ public class Main extends JPanel implements Runnable, KeyListener {
             }
             // player's movement
             if (leftPressed && player.getX() > 85)
-                player.move(2, "left");
+                player.move(handlings[playerIndex], "left");
             if (rightPressed && player.getX() < 330)
-                player.move(2, "right");
+                player.move(handlings[playerIndex], "right");
 
-            if (state != 5)
+            if (state != 5 && state != 1)
                 g.drawImage(arrow, arrowStates.get(arrowState).get(0), arrowStates.get(arrowState).get(1), null);
         }
         if (state == 0) { // 0 - Menu
             g.drawImage(menu, 0, 0, null);
-            // g.drawImage(coin, 360, 10, null);
         } else if (state == 1) { // 1 - Store/MarketPlace
+            g.setFont(smallFont);
             g.drawImage(store, 0, 0, null);
-            g.drawImage(cars.get(selected), 160, 400, null);
+
+            if (selected != 7 && selected != 8 && selected != 9)
+                g.drawImage(cars.get(selected), 160, 380, null);
+            else
+                g.drawImage(smallCars.get(selected - 7), 170, 365, null);
+
+            if (status[selected] == 'e') {
+                g.drawString("Equipped!", 200, 350);
+            } else if (status[selected] == 'u') {
+                g.drawString("Unlocked!", 200, 350);
+            } else
+                g.drawString("Locked!", 210, 350);
+
+            if (boughtFailed) {
+                g.drawString("You don't", 240, 430);
+                g.drawString("have", 240, 445);
+                g.drawString("enough", 240, 460);
+                g.drawString("coins!", 240, 475);
+            } else {
+                g.drawImage(coin, 240, 420, null);
+                g.drawString(Integer.toString(costs[selected]), 275, 440);
+                g.drawImage(steeringWheel, 240, 450, null);
+                g.drawString(handlings[selected] + "", 275, 470);
+            }
+
         } else if (state == 2) { // 2 - Past HighScores
             g.drawImage(highscores, 0, 0, null);
             g.setFont(smallFont);
@@ -317,7 +398,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             }
 
             g.drawString("score: " + Integer.toString(score), 20, 40);
-
+            updateStats(); // continuously update coins
         } else if (state == 6) { // 6 - Pause
 
         } else if (state == 7) { // 7 - Game Over
@@ -358,21 +439,45 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 rightPressed = true;
         } else if (state == 1) { // 1 - Store/MarketPlace
             if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                boughtFailed = false;
                 selected = playerIndex;
                 state = 0;
             } else if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
                 // check for equip
-                // check for buy
-            } else if (e.getKeyCode() == KeyEvent.VK_LEFT)
+                if (status[selected] != 'l') {
+                    boughtFailed = false;
+                    playerIndex = selected;
+                    player = new Car(cars.get(playerIndex), player.getX(), player.getY(), 0);
+                    for (int i = 0; i < 12; i++) {
+                        if (status[i] == 'e')
+                            status[i] = 'u';
+                    }
+                    status[selected] = 'e';
+                }
+                // check for buy - WORKING ON IT OIAEREJAEIROUGERAGIOUHAEGRIOPHU
+                else {
+                    if (coins >= costs[selected]) {
+                        status[selected] = 'u';
+                        coins -= costs[selected];
+                    } else {
+                        boughtFailed = true;
+                    }
+                }
+                updateStats();
+            } else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+                boughtFailed = false;
                 if (!(selected == 0))
                     selected--;
                 else
                     selected = 11;
-            else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+            } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+                boughtFailed = false;
                 if (!(selected == 11))
                     selected++;
                 else
                     selected = 0;
+            }
+            System.out.println(coins);
         } else if (state == 2 || state == 3 || state == 4) { // 3 - Instructions
             if (e.getKeyCode() == KeyEvent.VK_ENTER)
                 state = 0;
