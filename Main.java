@@ -33,6 +33,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
     BufferedImage instructions;
     BufferedImage about;
     BufferedImage highscores;
+    BufferedImage store;
     BufferedImage arrow;
     BufferedImage coin;
 
@@ -64,6 +65,10 @@ public class Main extends JPanel implements Runnable, KeyListener {
     Boolean rightPressed = false;
 
     int score = 0;
+
+    int coins;
+    int playerIndex;
+    int selected = 0;
 
     public void resetVars() {
         player = new Car(cars.get(0), 250, 700, 0);
@@ -142,6 +147,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             instructions = ImageIO.read(new File("assets/instructions.png"));
             about = ImageIO.read(new File("assets/about.png"));
             highscores = ImageIO.read(new File("assets/highscores.png"));
+            store = ImageIO.read(new File("assets/store.png"));
             coin = ImageIO.read(new File("assets/coin.png"));
 
             bgHeight = bg.getHeight();
@@ -222,7 +228,8 @@ public class Main extends JPanel implements Runnable, KeyListener {
             g.drawImage(menu, 0, 0, null);
             // g.drawImage(coin, 360, 10, null);
         } else if (state == 1) { // 1 - Store/MarketPlace
-
+            g.drawImage(store, 0, 0, null);
+            g.drawImage(cars.get(selected), 160, 400, null);
         } else if (state == 2) { // 2 - Past HighScores
             g.drawImage(highscores, 0, 0, null);
             g.setFont(smallFont);
@@ -245,8 +252,29 @@ public class Main extends JPanel implements Runnable, KeyListener {
             g.drawImage(about, 0, 0, null);
         } else if (state == 5) { // 5 - In-Game
             // player collision
-            if (checkCollision(player, enemies))
+            if (checkCollision(player, enemies)) {
+                try {
+                    BufferedReader in = new BufferedReader(new FileReader("highscores.txt"));
+                    String s;
+                    Queue<Integer> scores = new PriorityQueue<>(10, Collections.reverseOrder());
+                    while ((s = in.readLine()) != null) {
+                        scores.add(Integer.parseInt(s));
+                    }
+                    scores.add(score);
+                    in.close();
+
+                    PrintWriter out = new PrintWriter(new File("highscores.txt"));
+                    for (int j = 0; j < 10; j++) {
+                        if (!scores.isEmpty())
+                            out.println(scores.remove());
+                    }
+                    out.close();
+                } catch (IOException e) {
+                    System.out.println("highscores.txt missing!");
+                }
+
                 state = 7;
+            }
 
             // spawn new cars
             if (score > 10) {
@@ -329,7 +357,22 @@ public class Main extends JPanel implements Runnable, KeyListener {
             else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
                 rightPressed = true;
         } else if (state == 1) { // 1 - Store/MarketPlace
-
+            if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                selected = playerIndex;
+                state = 0;
+            } else if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+                // check for equip
+                // check for buy
+            } else if (e.getKeyCode() == KeyEvent.VK_LEFT)
+                if (!(selected == 0))
+                    selected--;
+                else
+                    selected = 11;
+            else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+                if (!(selected == 11))
+                    selected++;
+                else
+                    selected = 0;
         } else if (state == 2 || state == 3 || state == 4) { // 3 - Instructions
             if (e.getKeyCode() == KeyEvent.VK_ENTER)
                 state = 0;
