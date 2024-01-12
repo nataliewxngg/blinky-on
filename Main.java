@@ -61,7 +61,6 @@ public class Main extends JPanel implements Runnable, KeyListener {
     int bgHeight;
     int y = 0; // reference point
     double speed = 1;
-    double minSpeed = 1;
 
     int FPS = 60;
     int screenWidth = 500;
@@ -289,7 +288,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
             if (selected != 7 && selected != 8 && selected != 9)
                 g.drawImage(cars.get(selected), 160, 380, null);
-            else
+            else // if player selects these, move up the y position
                 g.drawImage(smallCars.get(selected - 7), 170, 365, null);
 
             if (status[selected] == 'e') {
@@ -393,7 +392,6 @@ public class Main extends JPanel implements Runnable, KeyListener {
             for (int i = 0; i < speeds.size(); i++) {
                 if (speeds.containsKey(score)) {
                     speed = speeds.get(score);
-                    minSpeed = speed;
                 }
             }
 
@@ -490,6 +488,8 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 leftPressed = true;
             else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
                 rightPressed = true;
+            else if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+                state = 6;
         } else if (state == 6) { // 6 - Pause
 
         } else if (state == 7) { // 7 - Game Over

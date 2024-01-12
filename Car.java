@@ -32,10 +32,10 @@ public class Car {
         return y;
     }
 
-    public void speedUp() {
-        speed++;
+    public void stop() {
+        speed = 0;
     }
-    public void stop() {speed=0;}
+
     public void move(int factor, String direction) {
         if (direction == "up")
             this.y -= factor;
