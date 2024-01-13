@@ -15,4 +15,13 @@ public class PowerUp {
         g.drawImage(this.powerUp, this.x, this.y, null);
         this.y += speed;
     }
+
+    // Getters and Setters
+    public int getX() {
+        return this.x;
+    }
+
+    public int getY() {
+        return this.y;
+    }
 }

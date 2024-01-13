@@ -35,6 +35,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
     BufferedImage about;
     BufferedImage highscores;
     BufferedImage store;
+    BufferedImage pause;
     BufferedImage arrow;
     BufferedImage coin;
     BufferedImage steeringWheel;
@@ -60,7 +61,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
     int bgHeight;
     int y = 0; // reference point
-    double speed = 1;
+    int speed = 1;
 
     int FPS = 60;
     int screenWidth = 500;
@@ -72,6 +73,8 @@ public class Main extends JPanel implements Runnable, KeyListener {
     int score = 0;
 
     int coins;
+    LinkedList<Coin> availableCoins = new LinkedList<>();
+
     int playerIndex;
     int selected;
     Boolean boughtFailed = false;
@@ -79,6 +82,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
     public void resetVars() {
         player = new Car(cars.get(playerIndex), 250, 700, 0);
         enemies.clear();
+        availableCoins.clear();
         speed = 1;
         arrowState = 1;
         score = 0;
@@ -86,19 +90,19 @@ public class Main extends JPanel implements Runnable, KeyListener {
         rightPressed = leftPressed = false;
     }
 
-    public static Boolean checkCollision(Car car, LinkedList<Car> nowEnemies) {
-        Car currentCar;
-        for (int i = 0; i < nowEnemies.size(); i++) {
-            currentCar = nowEnemies.get(i);
-
-            if (car.getX() < currentCar.getX() + currentCar.getCar().getWidth() &&
-                    car.getX() + car.getCar().getWidth() > currentCar.getX() &&
-                    car.getY() < currentCar.getY() + currentCar.getCar().getHeight() &&
-                    car.getY() + car.getCar().getHeight() > currentCar.getY()) {
+    public Boolean coinCollision() {
+        Coin coin;
+        for (int i = 0; i < availableCoins.size(); i++) {
+            coin = availableCoins.get(i);
+            if (player.getX() < coin.getX() + Coin.getWidth() &&
+                    player.getX() + player.getCar().getWidth() > coin.getX() &&
+                    player.getY() < coin.getY() + Coin.getHeight() &&
+                    player.getY() + player.getCar().getHeight() > coin.getY()) {
+                coins++;
+                availableCoins.remove(i);
                 return true;
             }
         }
-
         return false;
     }
 
@@ -176,6 +180,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             about = ImageIO.read(new File("assets/about.png"));
             highscores = ImageIO.read(new File("assets/highscores.png"));
             store = ImageIO.read(new File("assets/store.png"));
+            pause = ImageIO.read(new File("assets/pause.png"));
             coin = ImageIO.read(new File("assets/coin.png"));
             steeringWheel = ImageIO.read(new File("assets/steering-wheel.png"));
 
@@ -241,7 +246,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
     public void update() {
         // update stuff
-        if (state != 7) {
+        if (state != 7 && state != 6) {
             y += speed;
             if (y < -bgHeight)
                 y = 0;
@@ -259,7 +264,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
         g.drawImage(bg, 0, y + bgHeight, null);
         g.drawImage(bg, 0, y - bgHeight, null);
 
-        player.draw(g);
+        player.draw(g, false);
 
         g.drawImage(coin, 390, 10, null);
         g.drawString(coins + "", 420, 34);
@@ -270,7 +275,8 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 player.move(2, "up");
             } else if (player.getY() > 460) {
                 player.move(1, "up");
-            }
+            } else if (player.getY() > 415 && (playerIndex == 7 || playerIndex == 8 || playerIndex == 9))
+                player.move(1, "up");
             // player's movement
             if (leftPressed && player.getX() > 85)
                 player.move(handlings[playerIndex], "left");
@@ -332,7 +338,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             g.drawImage(about, 0, 0, null);
         } else if (state == 5) { // 5 - In-Game
             // player collision
-            if (checkCollision(player, enemies)) {
+            if (player.collides(enemies)) {
                 try {
                     BufferedReader in = new BufferedReader(new FileReader("highscores.txt"));
                     String s;
@@ -356,11 +362,14 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 state = 7;
             }
 
+            // coin collision
+            coinCollision();
+
             // spawn new cars
             if (score > 10) {
                 int rand = random.nextInt(101); // random int from 0-100
                 int rand1;
-                int[] x = { 90, 170, 250, 330 };
+                int[] xCar = { 90, 170, 250, 330 };
 
                 if (rand == 59) {
                     do {
@@ -368,12 +377,24 @@ public class Main extends JPanel implements Runnable, KeyListener {
                         rand1 = random.nextInt(4);
                     } while (rand1 == 0);
 
-                    Car newCar = new Car(cars.get(random.nextInt(cars.size())), x[rand], -250, rand1);
+                    Car newCar = new Car(cars.get(random.nextInt(cars.size())), xCar[rand], -250, rand1);
 
-                    if (!checkCollision(newCar, enemies))
+                    if (!newCar.collides(enemies))
                         enemies.add(newCar);
                     else
                         System.out.println("Collision occured while spawning!");
+                } else if (rand == 10) {
+                    rand = random.nextInt(4);
+                    availableCoins.add(new Coin(xCar[rand] + 20, -200));
+                }
+            }
+
+            // display all coins
+            for (int i = 0; i < availableCoins.size(); i++) {
+                if (availableCoins.get(i).getY() > 650) {
+                    availableCoins.remove(i);
+                } else {
+                    availableCoins.get(i).draw(g, speed);
                 }
             }
 
@@ -384,7 +405,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 } else {
                     g.drawRect(enemies.get(i).getX(), enemies.get(i).getY(),
                             enemies.get(i).getCar().getWidth(), enemies.get(i).getCar().getHeight());
-                    enemies.get(i).draw(g);
+                    enemies.get(i).draw(g, false);
                 }
             }
 
@@ -397,14 +418,20 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
             g.drawString("score: " + Integer.toString(score), 20, 40);
             updateStats(); // continuously update coins
-        } else if (state == 6) { // 6 - Pause
 
-        } else if (state == 7) { // 7 - Game Over
-            for (int i = 0; i < enemies.size(); i++) {
-                enemies.get(i).stop();
-                enemies.get(i).draw(g);
+        } else if (state == 6 || state == 7) {
+            for (int i = 0; i < availableCoins.size(); i++) {
+                availableCoins.get(i).draw(g, 0);
             }
-            g.drawImage(gameOver, 0, 0, null);
+            for (int i = 0; i < enemies.size(); i++) {
+                enemies.get(i).draw(g, true);
+            }
+            if (state == 6) {
+                g.drawImage(pause, 0, 0, null);
+                g.drawString("score: " + Integer.toString(score), 20, 40);
+            } else {
+                g.drawImage(gameOver, 0, 0, null);
+            }
         }
     }
 
@@ -451,9 +478,11 @@ public class Main extends JPanel implements Runnable, KeyListener {
                             status[i] = 'u';
                     }
                     status[selected] = 'e';
-                }
-                // check for buy - WORKING ON IT OIAEREJAEIROUGERAGIOUHAEGRIOPHU
-                else {
+                    if (selected == 7 || selected == 8 || selected == 9)
+                        player.setY(415);
+                    else
+                        player.setY(460);
+                } else { // check for buy
                     if (coins >= costs[selected]) {
                         status[selected] = 'u';
                         coins -= costs[selected];
@@ -491,7 +520,14 @@ public class Main extends JPanel implements Runnable, KeyListener {
             else if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
                 state = 6;
         } else if (state == 6) { // 6 - Pause
-
+            if (e.getKeyChar() == 'r' || e.getKeyChar() == 'R') {
+                resetVars();
+                state = 5;
+            } else if (e.getKeyChar() == 'm' || e.getKeyChar() == 'M') {
+                resetVars();
+                state = 0;
+            } else if (e.getKeyCode() == KeyEvent.VK_ENTER)
+                state = 5;
         } else if (state == 7) { // 7 - Game Over
             if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
                 resetVars();

@@ -27,4 +27,20 @@ public class Coin {
         this.y += speed;
     }
 
+    // Getters and Setters
+    public int getX() {
+        return this.x;
+    }
+
+    public int getY() {
+        return this.y;
+    }
+
+    public static int getWidth() {
+        return coin.getWidth();
+    }
+
+    public static int getHeight() {
+        return coin.getHeight();
+    }
 }
