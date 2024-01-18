@@ -379,10 +379,16 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
                     Car newCar = new Car(cars.get(random.nextInt(cars.size())), xCar[rand], -250, rand1);
 
-                    if (!newCar.collides(enemies))
+                    if (!newCar.collides(enemies)) {
+                        for (int i = 0; i < enemies.size(); i++) {
+                            if (newCar.getX() == enemies.get(i).getX() && enemies.get(i).getY() - 400 < newCar.getY()) {
+                                newCar.setSpeed(enemies.get(i).getSpeed() + 1);
+                            }
+                        }
                         enemies.add(newCar);
-                    else
+                    } else
                         System.out.println("Collision occured while spawning!");
+
                 } else if (rand == 10) {
                     rand = random.nextInt(4);
                     availableCoins.add(new Coin(xCar[rand] + 20, -200));
@@ -409,12 +415,16 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 }
             }
 
+            // display score and update speed
             score++;
             for (int i = 0; i < speeds.size(); i++) {
                 if (speeds.containsKey(score)) {
                     speed = speeds.get(score);
                 }
             }
+
+            // enemy collision check
+            Car.enemyCollides(enemies);
 
             g.drawString("score: " + Integer.toString(score), 20, 40);
             updateStats(); // continuously update coins

@@ -36,6 +36,23 @@ public class Car {
         return false;
     }
 
+    public static void enemyCollides(LinkedList<Car> cars) {
+        for (int i = 0; i < cars.size(); i++) {
+            for (int j = 0; j < cars.size(); j++) {
+                // in-front
+                if (cars.get(i).y > cars.get(j).y) {
+                    if (cars.get(i).y - 400 < cars.get(j).y) {
+                        if (cars.get(i).x == cars.get(j).x) // in-front
+                            cars.get(i).speed = cars.get(j).speed;
+                        else if (cars.get(i).x - 1 == cars.get(j).x || cars.get(j).x + 1 == cars.get(j).x) { // side-by-side
+                            cars.get(i).speed = cars.get(j).speed + 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Getters and Setters
     public BufferedImage getCar() {
         return car;
@@ -49,8 +66,16 @@ public class Car {
         return y;
     }
 
+    public int getSpeed() {
+        return speed;
+    }
+
     public void setY(int val) {
         this.y = val;
+    }
+
+    public void setSpeed(int val) {
+        this.speed = val;
     }
 
     public void move(int factor, String direction) {
