@@ -22,9 +22,10 @@ public class Coin {
         this.y = y;
     }
 
-    public void draw(Graphics g, int speed) {
+    public void draw(Graphics g, int speed, Boolean stop) {
         g.drawImage(coin, this.x, this.y, null);
-        this.y += speed;
+        if (!stop)
+            this.y += speed;
     }
 
     // Getters and Setters

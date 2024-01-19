@@ -76,7 +76,9 @@ public class Main extends JPanel implements Runnable, KeyListener {
     int score = 0;
 
     int coins;
-    LinkedList<Coin> availableCoins = new LinkedList<>();
+    LinkedList<Coin> gameCoins = new LinkedList<>();
+    LinkedList<PowerUp> gamePowerUps = new LinkedList<>();
+    String[] powerUpTypes = { "dash", "doubleCoins" };
 
     int playerIndex;
     int selected;
@@ -85,7 +87,8 @@ public class Main extends JPanel implements Runnable, KeyListener {
     public void resetVars() { // CONTINUOUSLY UPDATE!!!!!!!!!!
         player = new Car(cars.get(playerIndex), 250, 700, 0);
         enemies.clear();
-        availableCoins.clear();
+        gameCoins.clear();
+        gamePowerUps.clear();
         speed = 1;
         arrowState = 1;
         score = 0;
@@ -93,20 +96,34 @@ public class Main extends JPanel implements Runnable, KeyListener {
         rightPressed = leftPressed = upPressed = downPressed = false;
     }
 
-    public Boolean coinCollision() {
+    public void coinCollision() {
         Coin coin;
-        for (int i = 0; i < availableCoins.size(); i++) {
-            coin = availableCoins.get(i);
+        for (int i = 0; i < gameCoins.size(); i++) {
+            coin = gameCoins.get(i);
             if (player.getX() < coin.getX() + Coin.getWidth() &&
                     player.getX() + player.getCar().getWidth() > coin.getX() &&
                     player.getY() < coin.getY() + Coin.getHeight() &&
                     player.getY() + player.getCar().getHeight() > coin.getY()) {
                 coins++;
-                availableCoins.remove(i);
-                return true;
+                gameCoins.remove(i);
             }
         }
-        return false;
+    }
+
+    public void powerUpsCollision() {
+        PowerUp powerup;
+
+        for (int i = 0; i < gamePowerUps.size(); i++) {
+            powerup = gamePowerUps.get(i);
+
+            if (player.getX() < powerup.getX() + powerup.getWidth() &&
+                    player.getX() + player.getCar().getWidth() > powerup.getX() &&
+                    player.getY() < powerup.getY() + Coin.getHeight() &&
+                    player.getY() + player.getCar().getHeight() > powerup.getY()) {
+                // do code here
+                gamePowerUps.remove(i);
+            }
+        }
     }
 
     public static String getHighScores() {
@@ -157,7 +174,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
         if (rand == 59) { // random # i selected to spawn cars!
             do {
-                rand = random.nextInt(3); // for x pos
+                rand = random.nextInt(4); // for x pos
                 randSpeed = random.nextInt(4);
             } while (randSpeed == 0);
 
@@ -167,9 +184,15 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 enemies.add(newCar);
             } else
                 System.out.println("Collision occurred while spawning!");
-        } else if (rand == 10) {
+        } else if (rand == 9) { // random # i selected to spawn coins
             rand = random.nextInt(4);
-            availableCoins.add(new Coin(xCar[rand] + 20, -200));
+            gameCoins.add(new Coin(xCar[rand] + 20, -200));
+        }
+
+        rand = random.nextInt(500);
+        if (rand == 59) {
+            rand = random.nextInt(2);
+            gamePowerUps.add(new PowerUp(powerUpTypes[rand], xCar[rand] + 15, -200));
         }
     }
 
@@ -408,20 +431,28 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 state = 7;
             }
 
-            // check coin and enemy cars collision respectively
+            // check coin, enemy cars, and powerups collision respectively
             coinCollision();
             Car.enemyCollides(enemies);
+            powerUpsCollision();
 
             // spawn new enemies (cars), coins, and powerups
             spawnEntities(score);
 
             // display all coins and enemies while removing the remaining entities out of
             // bounds
-            for (Coin coin : availableCoins) {
-                if (coin.getY() > 650)
-                    availableCoins.remove(coin);
+            for (int i = 0; i < gameCoins.size(); i++) {
+                if (gameCoins.get(i).getY() > 650)
+                    gameCoins.remove(gameCoins.get(i));
                 else
-                    coin.draw(g, speed);
+                    gameCoins.get(i).draw(g, speed, false);
+            }
+            for (int i = 0; i < gamePowerUps.size(); i++) {
+                if (gamePowerUps.get(i).getY() > 650) {
+                    gamePowerUps.remove(i);
+                } else {
+                    gamePowerUps.get(i).draw(g, speed, false);
+                }
             }
             for (int i = 0; i < enemies.size(); i++) {
                 if (enemies.get(i).getY() > 700) {
@@ -445,11 +476,12 @@ public class Main extends JPanel implements Runnable, KeyListener {
             updateStats(); // continuously update amount of coins in stats.txt
 
         } else if (state == 6 || state == 7) {
-            for (Coin coin : availableCoins) {
-                coin.draw(g, speed);
-            }
+            for (Coin coin : gameCoins)
+                coin.draw(g, speed, true);
+            for (PowerUp powerUp : gamePowerUps)
+                powerUp.draw(g, speed, true);
             for (Car enemy : enemies)
-                enemy.draw(g, false);
+                enemy.draw(g, true);
 
             if (state == 6) {
                 g.drawImage(pause, 0, 0, null);
