@@ -41,7 +41,7 @@ public class Car {
             for (int j = 0; j < cars.size(); j++) {
                 // in-front
                 if (cars.get(i).y > cars.get(j).y) {
-                    if (cars.get(i).y - 400 < cars.get(j).y) {
+                    if (cars.get(i).y - 500 < cars.get(j).y) {
                         if (cars.get(i).x == cars.get(j).x) // in-front
                             cars.get(i).speed = cars.get(j).speed;
                         else if (cars.get(i).x - 1 == cars.get(j).x || cars.get(j).x + 1 == cars.get(j).x) { // side-by-side

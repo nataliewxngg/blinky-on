@@ -69,6 +69,10 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
     Boolean leftPressed = false;
     Boolean rightPressed = false;
+    Boolean upPressed = false;
+    Boolean downPressed = false;
+    int slowCoolDown = 0;
+    int fastCoolDown = 0;
 
     int score = 0;
 
@@ -79,7 +83,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
     int selected;
     Boolean boughtFailed = false;
 
-    public void resetVars() {
+    public void resetVars() { // CONTINUOUSLY UPDATE!!!!!!!!!!
         player = new Car(cars.get(playerIndex), 250, 700, 0);
         enemies.clear();
         availableCoins.clear();
@@ -87,7 +91,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
         arrowState = 1;
         score = 0;
 
-        rightPressed = leftPressed = false;
+        rightPressed = leftPressed = upPressed = downPressed = false;
     }
 
     public Boolean coinCollision() {
@@ -215,13 +219,10 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
         // initial gradual acceleration
         speeds.put(10, 2);
-        speeds.put(30, 3);
-        speeds.put(60, 4);
-        speeds.put(100, 5);
-        speeds.put(160, 6);
-        speeds.put(300, 7);
-        speeds.put(600, 8);
-        speeds.put(1000, 9);
+        speeds.put(20, 3);
+        speeds.put(40, 4);
+        speeds.put(60, 5);
+        speeds.put(80, 6);
 
         try {
             BufferedReader in = new BufferedReader(new FileReader("stats.txt"));
@@ -337,6 +338,29 @@ public class Main extends JPanel implements Runnable, KeyListener {
         } else if (state == 4) { // 4 - About
             g.drawImage(about, 0, 0, null);
         } else if (state == 5) { // 5 - In-Game
+            // player speed-up/down
+            if (upPressed && speed < 11 && score >= 80) {
+                if (fastCoolDown == 30) {
+                    speed++;
+                    for (int i = 0; i < enemies.size(); i++) {
+                        enemies.get(i).setSpeed(enemies.get(i).getSpeed() + 1);
+                    }
+                    fastCoolDown = 0;
+                    System.out.println("SPEED UP!");
+                } else
+                    fastCoolDown++;
+            } else if (downPressed && speed > 7 && score >= 80) {
+                if (slowCoolDown == 30) {
+                    speed--;
+                    for (int i = 0; i < enemies.size(); i++) {
+                        enemies.get(i).setSpeed(enemies.get(i).getSpeed() - 1);
+                    }
+                    slowCoolDown = 0;
+                    System.out.println("SLOW DOWN!");
+                } else
+                    slowCoolDown++;
+            }
+
             // player collision
             if (player.collides(enemies)) {
                 try {
@@ -358,7 +382,6 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 } catch (IOException e) {
                     System.out.println("highscores.txt missing!");
                 }
-
                 state = 7;
             }
 
@@ -406,11 +429,9 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
             // display all "enemies"
             for (int i = 0; i < enemies.size(); i++) {
-                if (enemies.get(i).getY() > 650) {
+                if (enemies.get(i).getY() > 700) {
                     enemies.remove(i);
                 } else {
-                    g.drawRect(enemies.get(i).getX(), enemies.get(i).getY(),
-                            enemies.get(i).getCar().getWidth(), enemies.get(i).getCar().getHeight());
                     enemies.get(i).draw(g, false);
                 }
             }
@@ -420,6 +441,8 @@ public class Main extends JPanel implements Runnable, KeyListener {
             for (int i = 0; i < speeds.size(); i++) {
                 if (speeds.containsKey(score)) {
                     speed = speeds.get(score);
+                    if (speed == 80)
+                        fastCoolDown = 0;
                 }
             }
 
@@ -527,8 +550,15 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 leftPressed = true;
             else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
                 rightPressed = true;
-            else if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+            else if (e.getKeyCode() == KeyEvent.VK_UP) {
+                upPressed = true;
+                fastCoolDown = 30;
+            } else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+                downPressed = true;
+                slowCoolDown = 30;
+            } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
                 state = 6;
+
         } else if (state == 6) { // 6 - Pause
             if (e.getKeyChar() == 'r' || e.getKeyChar() == 'R') {
                 resetVars();
@@ -562,6 +592,13 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 leftPressed = false;
             else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
                 rightPressed = false;
+            else if (e.getKeyCode() == KeyEvent.VK_UP) {
+                upPressed = false;
+                fastCoolDown = 30;
+            } else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+                downPressed = false;
+                slowCoolDown = 30;
+            }
         } else if (state == 6) { // 6 - Pause
 
         }
