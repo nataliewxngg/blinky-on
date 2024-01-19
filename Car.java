@@ -39,17 +39,21 @@ public class Car {
     public static void enemyCollides(LinkedList<Car> cars) {
         for (int i = 0; i < cars.size(); i++) {
             for (int j = 0; j < cars.size(); j++) {
-                // in-front
-                if (cars.get(i).y > cars.get(j).y) {
-                    if (cars.get(i).y - 500 < cars.get(j).y) {
-                        if (cars.get(i).x == cars.get(j).x) // in-front
-                            cars.get(i).speed = cars.get(j).speed;
-                        else if (cars.get(i).x - 1 == cars.get(j).x || cars.get(j).x + 1 == cars.get(j).x) { // side-by-side
-                            cars.get(i).speed = cars.get(j).speed + 1;
-                        }
-                    }
+                if (i != j && cars.get(i).y > cars.get(j).y && cars.get(i).y - 300 < cars.get(j).y
+                        && cars.get(i).x == cars.get(j).x) {
+                    cars.get(i).speed = cars.get(j).speed;
                 }
             }
+        }
+    }
+
+    public static void speedUpOrDown(LinkedList<Car> cars, String upOrDown) {
+        if (upOrDown.equals("up")) {
+            for (Car car : cars)
+                car.speed++;
+        } else {
+            for (Car car : cars)
+                car.speed--;
         }
     }
 

@@ -2,6 +2,7 @@
 // Due Sunday, January 21, 2024
 
 // Blinky-on
+// ADD SOUNDS NATALIE WONG!!!! (vroom, blink coin, arrow, bg music on loop)
 
 import java.awt.*;
 import java.awt.event.*;
@@ -42,8 +43,6 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
     Font font = new Font("Press Start 2P", Font.PLAIN, 20);
     Font smallFont = new Font("Press Start 2P", Font.PLAIN, 13);
-
-    Random random = new Random();
 
     ArrayList<BufferedImage> cars = new ArrayList<>();
     ArrayList<BufferedImage> smallCars = new ArrayList<>();
@@ -110,7 +109,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
         return false;
     }
 
-    public static String getHighScores(String fileName) {
+    public static String getHighScores() {
         int count = 1;
         String s;
         String output = "";
@@ -127,6 +126,51 @@ public class Main extends JPanel implements Runnable, KeyListener {
             System.out.println("highscores.txt is missing!");
         }
         return output;
+    }
+
+    public static void saveScore(int score) {
+        try {
+            BufferedReader in = new BufferedReader(new FileReader("highscores.txt"));
+            String s;
+            Queue<Integer> scores = new PriorityQueue<>(10, Collections.reverseOrder());
+
+            while ((s = in.readLine()) != null)
+                scores.add(Integer.parseInt(s));
+            scores.add(score);
+            in.close();
+
+            PrintWriter out = new PrintWriter(new File("highscores.txt"));
+            for (int i = 0; i < 10; i++)
+                if (!scores.isEmpty())
+                    out.println(scores.remove());
+            out.close();
+        } catch (IOException e) {
+            System.out.println("highscores.txt missing!");
+        }
+    }
+
+    public void spawnEntities(int score) {
+        Random random = new Random();
+        int rand = random.nextInt(100);
+        int randSpeed;
+        int[] xCar = { 90, 170, 250, 330 };
+
+        if (rand == 59) { // random # i selected to spawn cars!
+            do {
+                rand = random.nextInt(3); // for x pos
+                randSpeed = random.nextInt(4);
+            } while (randSpeed == 0);
+
+            Car newCar = new Car(cars.get(random.nextInt(cars.size())), xCar[rand], -250, randSpeed);
+
+            if (!newCar.collides(enemies)) {
+                enemies.add(newCar);
+            } else
+                System.out.println("Collision occurred while spawning!");
+        } else if (rand == 10) {
+            rand = random.nextInt(4);
+            availableCoins.add(new Coin(xCar[rand] + 20, -200));
+        }
     }
 
     public void updateStats() {
@@ -206,7 +250,6 @@ public class Main extends JPanel implements Runnable, KeyListener {
             smallCars.add(ImageIO.read(new File("assets/cars/small/white-truck.png")));
             smallCars.add(ImageIO.read(new File("assets/cars/small/red-truck.png")));
             smallCars.add(ImageIO.read(new File("assets/cars/small/school-bus.png")));
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -224,6 +267,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
         speeds.put(60, 5);
         speeds.put(80, 6);
 
+        // Read info from stats
         try {
             BufferedReader in = new BufferedReader(new FileReader("stats.txt"));
             coins = Integer.parseInt(in.readLine());
@@ -278,6 +322,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 player.move(1, "up");
             } else if (player.getY() > 415 && (playerIndex == 7 || playerIndex == 8 || playerIndex == 9))
                 player.move(1, "up");
+
             // player's movement
             if (leftPressed && player.getX() > 85)
                 player.move(handlings[playerIndex], "left");
@@ -287,6 +332,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             if (state != 5 && state != 1)
                 g.drawImage(arrow, arrowStates.get(arrowState).get(0), arrowStates.get(arrowState).get(1), null);
         }
+
         if (state == 0) { // 0 - Menu
             g.drawImage(menu, 0, 0, null);
         } else if (state == 1) { // 1 - Store/MarketPlace
@@ -295,7 +341,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
             if (selected != 7 && selected != 8 && selected != 9)
                 g.drawImage(cars.get(selected), 160, 380, null);
-            else // if player selects these, move up the y position
+            else // if player selects bigger vehicles, move up the y position
                 g.drawImage(smallCars.get(selected - 7), 170, 365, null);
 
             if (status[selected] == 'e') {
@@ -320,7 +366,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
         } else if (state == 2) { // 2 - Past HighScores
             g.drawImage(highscores, 0, 0, null);
             g.setFont(smallFont);
-            String s = getHighScores("highscores.txt");
+            String s = getHighScores();
             int n = 0;
             for (String x : s.split("\n")) {
                 if (n == 85)
@@ -338,96 +384,45 @@ public class Main extends JPanel implements Runnable, KeyListener {
         } else if (state == 4) { // 4 - About
             g.drawImage(about, 0, 0, null);
         } else if (state == 5) { // 5 - In-Game
-            // player speed-up/down
+
+            // player movement - speed-up/down
             if (upPressed && speed < 11 && score >= 80) {
                 if (fastCoolDown == 30) {
                     speed++;
-                    for (int i = 0; i < enemies.size(); i++) {
-                        enemies.get(i).setSpeed(enemies.get(i).getSpeed() + 1);
-                    }
+                    Car.speedUpOrDown(enemies, "up");
                     fastCoolDown = 0;
-                    System.out.println("SPEED UP!");
                 } else
                     fastCoolDown++;
             } else if (downPressed && speed > 7 && score >= 80) {
                 if (slowCoolDown == 30) {
                     speed--;
-                    for (int i = 0; i < enemies.size(); i++) {
-                        enemies.get(i).setSpeed(enemies.get(i).getSpeed() - 1);
-                    }
+                    Car.speedUpOrDown(enemies, "down");
                     slowCoolDown = 0;
-                    System.out.println("SLOW DOWN!");
                 } else
                     slowCoolDown++;
             }
 
             // player collision
             if (player.collides(enemies)) {
-                try {
-                    BufferedReader in = new BufferedReader(new FileReader("highscores.txt"));
-                    String s;
-                    Queue<Integer> scores = new PriorityQueue<>(10, Collections.reverseOrder());
-                    while ((s = in.readLine()) != null) {
-                        scores.add(Integer.parseInt(s));
-                    }
-                    scores.add(score);
-                    in.close();
-
-                    PrintWriter out = new PrintWriter(new File("highscores.txt"));
-                    for (int j = 0; j < 10; j++) {
-                        if (!scores.isEmpty())
-                            out.println(scores.remove());
-                    }
-                    out.close();
-                } catch (IOException e) {
-                    System.out.println("highscores.txt missing!");
-                }
+                saveScore(score);
                 state = 7;
             }
 
-            // coin collision
+            // check coin and enemy cars collision respectively
             coinCollision();
+            Car.enemyCollides(enemies);
 
-            // spawn new cars
-            if (score > 10) {
-                int rand = random.nextInt(101); // random int from 0-100
-                int rand1;
-                int[] xCar = { 90, 170, 250, 330 };
+            // spawn new enemies (cars), coins, and powerups
+            spawnEntities(score);
 
-                if (rand == 59) {
-                    do {
-                        rand = random.nextInt(4);
-                        rand1 = random.nextInt(4);
-                    } while (rand1 == 0);
-
-                    Car newCar = new Car(cars.get(random.nextInt(cars.size())), xCar[rand], -250, rand1);
-
-                    if (!newCar.collides(enemies)) {
-                        for (int i = 0; i < enemies.size(); i++) {
-                            if (newCar.getX() == enemies.get(i).getX() && enemies.get(i).getY() - 400 < newCar.getY()) {
-                                newCar.setSpeed(enemies.get(i).getSpeed() + 1);
-                            }
-                        }
-                        enemies.add(newCar);
-                    } else
-                        System.out.println("Collision occured while spawning!");
-
-                } else if (rand == 10) {
-                    rand = random.nextInt(4);
-                    availableCoins.add(new Coin(xCar[rand] + 20, -200));
-                }
+            // display all coins and enemies while removing the remaining entities out of
+            // bounds
+            for (Coin coin : availableCoins) {
+                if (coin.getY() > 650)
+                    availableCoins.remove(coin);
+                else
+                    coin.draw(g, speed);
             }
-
-            // display all coins
-            for (int i = 0; i < availableCoins.size(); i++) {
-                if (availableCoins.get(i).getY() > 650) {
-                    availableCoins.remove(i);
-                } else {
-                    availableCoins.get(i).draw(g, speed);
-                }
-            }
-
-            // display all "enemies"
             for (int i = 0; i < enemies.size(); i++) {
                 if (enemies.get(i).getY() > 700) {
                     enemies.remove(i);
@@ -437,28 +432,25 @@ public class Main extends JPanel implements Runnable, KeyListener {
             }
 
             // display score and update speed
-            score++;
+            score += speed;
             for (int i = 0; i < speeds.size(); i++) {
                 if (speeds.containsKey(score)) {
                     speed = speeds.get(score);
                     if (speed == 80)
-                        fastCoolDown = 0;
+                        fastCoolDown = -50; // doesn't allow player to speed up immediately to avoid weird/sudden change
+                                            // in animation
                 }
             }
-
-            // enemy collision check
-            Car.enemyCollides(enemies);
-
             g.drawString("score: " + Integer.toString(score), 20, 40);
-            updateStats(); // continuously update coins
+            updateStats(); // continuously update amount of coins in stats.txt
 
         } else if (state == 6 || state == 7) {
-            for (int i = 0; i < availableCoins.size(); i++) {
-                availableCoins.get(i).draw(g, 0);
+            for (Coin coin : availableCoins) {
+                coin.draw(g, speed);
             }
-            for (int i = 0; i < enemies.size(); i++) {
-                enemies.get(i).draw(g, true);
-            }
+            for (Car enemy : enemies)
+                enemy.draw(g, false);
+
             if (state == 6) {
                 g.drawImage(pause, 0, 0, null);
                 g.drawString("score: " + Integer.toString(score), 20, 40);
@@ -585,8 +577,6 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 leftPressed = false;
             else if (e.getKeyCode() == KeyEvent.VK_RIGHT)
                 rightPressed = false;
-        } else if (state == 1) { // 1 - Store/MarketPlace
-
         } else if (state == 5) { // 5 - In-Game
             if (e.getKeyCode() == KeyEvent.VK_LEFT)
                 leftPressed = false;
@@ -599,8 +589,6 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 downPressed = false;
                 slowCoolDown = 30;
             }
-        } else if (state == 6) { // 6 - Pause
-
         }
     }
 
