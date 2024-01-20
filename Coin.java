@@ -22,6 +22,19 @@ public class Coin {
         this.y = y;
     }
 
+    // DESCRIPTION:
+    // returns true if the car provided in the parameter collides
+    // with this Coin object (this.)
+    public boolean collides(Car car) { // PARAMETERS: a Car object to check collision with
+        return car.getX() < this.x + Coin.getWidth() && car.getX() + car.getCar().getWidth() > this.x
+                && car.getY() < this.y + Coin.getHeight() &&
+                car.getY() + car.getCar().getHeight() > this.y;
+
+        // RETURNS:
+        // true if the car provided in the parameter collides with this Coin
+        // object, false otherwise
+    }
+
     public void draw(Graphics g, int speed, Boolean stop) {
         g.drawImage(coin, this.x, this.y, null);
         if (!stop)

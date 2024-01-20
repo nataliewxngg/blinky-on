@@ -78,10 +78,6 @@ public class Car {
         this.y = val;
     }
 
-    public void setSpeed(int val) {
-        this.speed = val;
-    }
-
     public void move(int factor, String direction) {
         if (direction == "up")
             this.y -= factor;
