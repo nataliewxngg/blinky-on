@@ -171,13 +171,13 @@ public class Main extends JPanel implements Runnable, KeyListener {
             coin = gameCoins.get(i);
 
             if (coin.collides(player)) {
+                playMusic("assets/coinSoundEffect.wav", false);
+
                 // if collided, accumulate to his/her currency (+2 if "double coins" power-up is
                 // active) and remove the Coin object from the game
                 coins++;
-                if (powerUps.get("doubleCoins")) {
+                if (powerUps.get("doubleCoins"))
                     coins++;
-                    playMusic("assets/coinSoundEffect.wav", false);
-                }
                 gameCoins.remove(i);
             }
         }
@@ -671,8 +671,10 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
             // spawns new enemies (cars), coins, and powerups
             // (unless player is utilizing their "dash" powerup)
-            if (dashTime == 100)
+            if (dashTime == 100) {
                 spawnEntities();
+                System.out.println("hi");
+            }
 
             // displays the enemies, coins, and powerups
             // (and removes the entities out of bounds)

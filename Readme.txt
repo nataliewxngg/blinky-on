@@ -12,6 +12,9 @@ HINTS:
 - Utilizing a car with a higher steering speed is not always better!
 - In similarity to reality, cars may suddenly slow down to compensate for 
   a slower car in front of it. Drive CAREFULLY and beware of this!
+- The DASH powerup may be beneficial but risky! 
+  A vehicle may be in front of you but out of your line of sight - Use at your own risk! 
+  (NOT A BUG - the DASH powerup would have been seemingly useless/boring without it)
 
 FUNCTIONALITIES MISSING FROM INITIAL PROPOSAL: 
 - The modifiability of the navigation keys were NOT applied
@@ -31,6 +34,4 @@ KNOWN BUGS/ERRORS:
 IMPORTANT INFORMATION:
 - Uncomment the .drawRect(...) line I incorporated (and noted) in Main.java to play/mark
   my game with visible hitboxes!
-- Uncomment the playMusic(...) lines if you would like to play with music/audio! 
-  However, please do note that it causes noticeable lag in the game.
 - Have fun :)
