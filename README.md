@@ -2,7 +2,9 @@
 ![In-game](screenshots/ingameSS.png)
 
 ICS4U ISU - Blinky-ON
+
 Natalie Wong
+
 January 21, 2024
 
 Blinky-ON is a dynamic, pausable single player game that utilizes the
