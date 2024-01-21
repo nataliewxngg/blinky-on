@@ -24,6 +24,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
                    // 5 - In-Game
                    // 6 - Pause
                    // 7 - Game Over
+                   // 8 - Settings
 
     JFrame frame;
     Thread thread;
@@ -36,6 +37,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
     BufferedImage highscores;
     BufferedImage store;
     BufferedImage pause;
+    BufferedImage settings;
     BufferedImage arrow;
     BufferedImage coin;
     BufferedImage steeringWheel;
@@ -51,6 +53,13 @@ public class Main extends JPanel implements Runnable, KeyListener {
                                                                     // value: the x and y coordinates of the arrow for
                                                                     // that specific arrow state
     int arrowState = 1;
+
+    // stores the y positions for each state of the arrow in the settings
+    int[] settingsArrowStates = { 435, 452, 470, 485, 502, 520 };
+    int settingsArrowState = 1;
+    Boolean keyListening = false;
+    String hitboxes;
+    String sfx;
 
     Font font = new Font("Press Start 2P", Font.PLAIN, 20);
     Font smallFont = new Font("Press Start 2P", Font.PLAIN, 13); // used for store/marketplace (state #1) and past
@@ -92,6 +101,9 @@ public class Main extends JPanel implements Runnable, KeyListener {
     Boolean rightPressed = false;
     Boolean upPressed = false;
     Boolean downPressed = false;
+
+    int rightControl, leftControl, upControl, downControl;
+    String rightControlText, leftControlText, upControlText, downControlText;
 
     Map<String, Boolean> powerUps = new HashMap<>(); // key: stores ALL the existing powerups
                                                      // value: a boolean to indicate whether or not the player has
@@ -164,6 +176,64 @@ public class Main extends JPanel implements Runnable, KeyListener {
         // RETURNS: none (void method)
     }
 
+    //
+    //
+    //
+    //
+    //
+    //
+    // COMMENT HERE
+    //
+    //
+    //
+    public static String getSettings() {
+        String out = "";
+        try {
+            BufferedReader in = new BufferedReader(new FileReader("settings.txt"));
+            String[] labels = { "STEER RIGHT  ", "STEER LEFT   ", "SPEED UP     ", "SLOW DOWN    " };
+
+            for (int i = 0; i < 8; i++) {
+                if (i < 4)
+                    in.readLine();
+                else {
+                    out += labels[i - 4] + in.readLine() + "\n";
+                }
+            }
+
+            out += "HITBOXES     " + in.readLine() + "\n";
+            out += "SFX          " + in.readLine();
+
+            in.close();
+            return out;
+        } catch (IOException e) {
+            System.out.println("settings.txt is missing!");
+        }
+        return out;
+    }
+
+    public void updateSettings() {
+        try {
+            PrintWriter out = new PrintWriter(new FileWriter("settings.txt"));
+
+            out.println(rightControl);
+            out.println(leftControl);
+            out.println(upControl);
+            out.println(downControl);
+
+            out.println(KeyEvent.getKeyText(rightControl));
+            out.println(KeyEvent.getKeyText(leftControl));
+            out.println(KeyEvent.getKeyText(upControl));
+            out.println(KeyEvent.getKeyText(downControl));
+
+            out.println(hitboxes);
+            out.println(sfx);
+
+            out.close();
+        } catch (IOException e) {
+            System.out.println("settings.txt is missing!");
+        }
+    }
+
     // DESCRIPTION: checks if player has collided with a coin and accumulates to
     // his/her currency if so. (+2 coins if the "double coins" power-up is active)
     public void coinCollision() { // PARAMETERS: none
@@ -174,7 +244,9 @@ public class Main extends JPanel implements Runnable, KeyListener {
             coin = gameCoins.get(i);
 
             if (coin.collides(player)) {
-                playMusic("assets/coinSoundEffect.wav", false);
+                // plays coin sound effect if toggled in settings
+                if (sfx.equals("On"))
+                    playMusic("assets/coinSoundEffect.wav", false);
 
                 // if collided, accumulate to his/her currency (+2 if "double coins" power-up is
                 // active) and remove the Coin object from the game
@@ -352,11 +424,16 @@ public class Main extends JPanel implements Runnable, KeyListener {
             }
         }
 
-        // displays the enemeis and removes the ounes out of bounds
+        // displays the enemeis and removes the ones out of bounds
+        // (displays the hitboxes of the cars as well if hitboxes is toggled in
+        // settings)
         for (int i = 0; i < enemies.size(); i++) {
             if (enemies.get(i).getY() > 700) {
                 enemies.remove(i);
             } else {
+                if (hitboxes.equals("On"))
+                    g.drawRect(enemies.get(i).getX(), enemies.get(i).getY(),
+                            enemies.get(i).getCar().getWidth(), enemies.get(i).getCar().getHeight());
                 enemies.get(i).draw(g, false);
             }
         }
@@ -448,6 +525,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             highscores = ImageIO.read(new File("assets/highscores.png"));
             store = ImageIO.read(new File("assets/store.png"));
             pause = ImageIO.read(new File("assets/pause.png"));
+            settings = ImageIO.read(new File("assets/settings.png"));
             arrow = ImageIO.read(new File("assets/arrow.png"));
             coin = ImageIO.read(new File("assets/coin.png"));
             steeringWheel = ImageIO.read(new File("assets/steering-wheel.png"));
@@ -494,6 +572,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
         arrowStates.put(3, new ArrayList<>(Arrays.asList(140, 298))); // 3-instructions
         arrowStates.put(4, new ArrayList<>(Arrays.asList(190, 316))); // 4-about
         arrowStates.put(5, new ArrayList<>(Arrays.asList(150, 334))); // 5-highscores
+        arrowStates.put(6, new ArrayList<>(Arrays.asList(170, 354))); // 6-settings
 
         // initializes the scores relative to the speed for gradual acceleration
         speeds.put(10, 2);
@@ -530,6 +609,27 @@ public class Main extends JPanel implements Runnable, KeyListener {
             in.close();
         } catch (IOException e) { // if stats.txt is missing, let the user know in the terminal
             System.out.println("stats.txt is missing!");
+        }
+
+        // reads info from settings.txt and initializes the right+left+up+down controls
+        // and the activity of hitboxes + music
+        try {
+            BufferedReader in = new BufferedReader(new FileReader("settings.txt"));
+
+            rightControl = Integer.parseInt(in.readLine());
+            leftControl = Integer.parseInt(in.readLine());
+            upControl = Integer.parseInt(in.readLine());
+            downControl = Integer.parseInt(in.readLine());
+
+            for (int i = 0; i < 4; i++)
+                in.readLine();
+
+            hitboxes = in.readLine();
+            sfx = in.readLine();
+
+            in.close();
+        } catch (IOException e) { // if settings.txt is missing, let the user know in the terminal
+            System.out.println("settings.txt is missing!");
         }
 
         // RETURNS: none (void method)
@@ -818,8 +918,12 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 coin.draw(g, speed, true);
             for (PowerUp powerUp : gamePowerUps)
                 powerUp.draw(g, speed, true);
-            for (Car enemy : enemies)
+            for (Car enemy : enemies) {
+                if (hitboxes.equals("On"))
+                    g.drawRect(enemy.getX(), enemy.getY(),
+                            enemy.getCar().getWidth(), enemy.getCar().getHeight());
                 enemy.draw(g, true);
+            }
 
             // displays the pause menu and score if state is 6
             if (state == 6) {
@@ -832,6 +936,33 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 g.drawImage(gameOver, 0, 0, null);
             }
         }
+
+        //
+        //
+        //
+        //
+        //
+        //
+        // COMMENT HERE
+        //
+        //
+        //
+        else if (state == 8) {
+            g.drawImage(settings, 0, 0, null);
+            g.setFont(smallFont);
+
+            g.drawString(">", 115, settingsArrowStates[settingsArrowState - 1]);
+
+            String s = getSettings();
+            int n = 435;
+
+            for (String x : s.split("\n")) {
+                g.drawString(x, 140, n);
+                n += 17;
+            }
+
+        }
+
         // RETURNS: none (void method)
     }
 
@@ -843,7 +974,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             // if player pressed the DOWN ARROW, increase the arrow state UNLESS it is
             // already at its maximum (return back to first arrow state in this case)
             if (e.getKeyCode() == KeyEvent.VK_DOWN)
-                if (arrowState == 5)
+                if (arrowState == 6)
                     arrowState = 1;
                 else
                     arrowState++;
@@ -852,7 +983,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             // already at its minimum (return back to last arrow state in this case)
             else if (e.getKeyCode() == KeyEvent.VK_UP)
                 if (arrowState == 1)
-                    arrowState = 5;
+                    arrowState = 6;
                 else
                     arrowState--;
 
@@ -869,12 +1000,14 @@ public class Main extends JPanel implements Runnable, KeyListener {
                     state = 4;
                 else if (arrowState == 5)
                     state = 2;
+                else if (arrowState == 6)
+                    state = 8;
             }
-            // if the player pressed the left or right arrow keys, update the
+            // if the player pressed the left or right control keys, update the
             // left/right pressed variables
-            if (e.getKeyCode() == KeyEvent.VK_LEFT)
+            if (e.getKeyCode() == leftControl)
                 leftPressed = true;
-            if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+            if (e.getKeyCode() == rightControl)
                 rightPressed = true;
         }
 
@@ -944,27 +1077,27 @@ public class Main extends JPanel implements Runnable, KeyListener {
             }
         }
 
-        // if game is in state 2/3/4 - highscores/instructions/about:
+        // if game is in state 2/3/4/8 - highscores/instructions/about:
         else if (state == 2 || state == 3 || state == 4) {
             // if user presses enter, return to main menu
             if (e.getKeyCode() == KeyEvent.VK_ENTER)
                 state = 0;
 
-            // if the player presses the left or right arrow keys, update the
+            // if the player presses the left or right control keys, update the
             // left/right pressed variables
-            if (e.getKeyCode() == KeyEvent.VK_LEFT)
+            if (e.getKeyCode() == leftControl)
                 leftPressed = true;
-            if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+            if (e.getKeyCode() == rightControl)
                 rightPressed = true;
         }
 
         // if the user is in state 5 - in-game:
         else if (state == 5) {
-            // if the player presses the left or right arrow keys, update the
+            // if the player presses the left or right control keys, update the
             // left/right pressed variables
-            if (e.getKeyCode() == KeyEvent.VK_LEFT)
+            if (e.getKeyCode() == leftControl)
                 leftPressed = true;
-            if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+            if (e.getKeyCode() == rightControl)
                 rightPressed = true;
 
             // if the player presses the escape key, enter the pause menu
@@ -1019,6 +1152,24 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 state = 5;
             }
         }
+        //
+        //
+        //
+        //
+        //
+        ///
+        ///
+        //
+        //
+        //
+        //
+        //
+        else if (state == 8) {
+            if (!keyListening)
+                // if the user presses the enter key, return back to the main menu
+                if (e.getKeyCode() == KeyEvent.VK_ENTER)
+                    state = 0;
+        }
 
         // RETURNS: none (void method)
     }
@@ -1029,11 +1180,11 @@ public class Main extends JPanel implements Runnable, KeyListener {
         // if user is in state 0/2/3/4 - menu/highscores/instructions/about/in-game:
         if (state == 0 || state == 2 || state == 3 || state == 4 || state == 5) {
 
-            // if the player releases the left or right arrow keys, update the
+            // if the player releases the left or right control keys, update the
             // left/right pressed variables
-            if (e.getKeyCode() == KeyEvent.VK_LEFT)
+            if (e.getKeyCode() == leftControl)
                 leftPressed = false;
-            if (e.getKeyCode() == KeyEvent.VK_RIGHT)
+            if (e.getKeyCode() == rightControl)
                 rightPressed = false;
         }
 
@@ -1049,18 +1200,71 @@ public class Main extends JPanel implements Runnable, KeyListener {
             // 2. score is greater than 80 (players CANNOT adjust speed prior to this to
             // avoid unlogically quick acceleration)
 
-            if (e.getKeyCode() == KeyEvent.VK_UP) {
+            if (e.getKeyCode() == upControl) {
                 if (speed < 11 && score >= 80) {
                     speed++;
                     Car.speedUpOrDown(enemies, "up");
                 }
             }
-            if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+            if (e.getKeyCode() == downControl) {
                 if (speed > 5 && score >= 80) {
                     speed--;
                     Car.speedUpOrDown(enemies, "down");
                 }
             }
+        }
+        //
+        //
+        //
+        //
+        //
+        //
+        // COMMENT HERE
+        //
+        //
+        //
+        else if (state == 8) {
+            if (!keyListening) {
+                if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+                    if (settingsArrowState == 6)
+                        settingsArrowState = 1;
+                    else
+                        settingsArrowState++;
+                }
+                if (e.getKeyCode() == KeyEvent.VK_UP) {
+                    if (settingsArrowState == 1)
+                        settingsArrowState = 6;
+                    else
+                        settingsArrowState--;
+                }
+                if (e.getKeyCode() == KeyEvent.VK_CONTROL && (settingsArrowState >= 1 && settingsArrowState <= 4)) {
+                    keyListening = true;
+                }
+
+                if (e.getKeyCode() == KeyEvent.VK_SHIFT && settingsArrowState == 5) {
+                    if (hitboxes.equals("On"))
+                        hitboxes = "Off";
+                    else
+                        hitboxes = "On";
+                } else if (e.getKeyCode() == KeyEvent.VK_SHIFT && settingsArrowState == 6) {
+                    if (sfx.equals("On"))
+                        sfx = "Off";
+                    else
+                        sfx = "On";
+                }
+            } else {
+                if (settingsArrowState == 1) { // RIGHT
+                    rightControl = e.getKeyCode();
+                } else if (settingsArrowState == 2) {
+                    leftControl = e.getKeyCode();
+                } else if (settingsArrowState == 3) {
+                    upControl = e.getKeyCode();
+                } else if (settingsArrowState == 4) {
+                    downControl = e.getKeyCode();
+                }
+                keyListening = false;
+            }
+            updateSettings();
         }
 
         // RETURNS: none (void method)
