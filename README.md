@@ -1,16 +1,15 @@
-![Main Menu](screenshots/menuSS.png)
-![In-game](screenshots/ingameSS.png)
+<div>
+  <img src="screenshots/menuSS.png" width="500">
+  <img src="screenshots/ingameSS.png" width="485">
+</div>
 
-ICS4U ISU - Blinky-ON
-
-Natalie Wong
-
-January 21, 2024
+<h1>ICS4U ISU: Blinky-ON</h1>
+Natalie Wong | January 21, 2024
 
 Blinky-ON is a dynamic, pausable single player game that utilizes the
 arrow keys to navigate a high-speed car through busy one-way traffic.
 
-HINTS:
+<h3>HINTS:</h3>
 
 - Leave extra space between the corners of the cars when maneuvering to avoid
   collision! (due to image's width and height)
@@ -21,4 +20,4 @@ HINTS:
   A vehicle may be in front of you but out of your line of sight - Use at your own risk!
   (NOT A "BUG MADE FEATURE"!!!! - the DASH powerup would have been too overpowered without it)
 
-Have fun!
+<h3>HAVE FUN!</h3>
