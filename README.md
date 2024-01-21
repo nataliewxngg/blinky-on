@@ -11,8 +11,8 @@ arrow keys to navigate a high-speed car through busy one-way traffic.
 
 <h3>HINTS:</h3>
 
-- Leave extra space between the corners of the cars when maneuvering to avoid
-  collision! (due to image's width and height)
+- Leave extra space between the corners of cars when maneuvering to avoid
+  collision! (due to image's dimensions)
 - Utilizing a car with a higher steering speed is not always better!
 - In similarity to reality, cars may suddenly slow down to compensate for
   a slower car in front of it. Drive CAREFULLY and beware of this!
