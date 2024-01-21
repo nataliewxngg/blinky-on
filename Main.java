@@ -97,10 +97,9 @@ public class Main extends JPanel implements Runnable, KeyListener {
                                                      // value: a boolean to indicate whether or not the player has
                                                      // obtained or is utilizing them
 
-    // used for the "double coins" powerup
+    // used for powerups
     int doubleCoinsTime = 800;
-
-    // used for the "dash" powerup
+    int invincibilityTime = 400;
     int dashTime = 100;
     int originalSpeed;
 
@@ -118,8 +117,12 @@ public class Main extends JPanel implements Runnable, KeyListener {
         // sets all the powerups to FALSE
         powerUps.put("dash", false);
         powerUps.put("doubleCoins", false);
+        powerUps.put("invincibility", false);
+
+        player.setCarImage(cars.get(playerIndex));
 
         doubleCoinsTime = 800;
+        invincibilityTime = 400;
         dashTime = 100;
         score = 0;
         speed = arrowState = 1;
@@ -267,53 +270,63 @@ public class Main extends JPanel implements Runnable, KeyListener {
         // RETURNS: none (void method)
     }
 
-    // DESCRIPTION: spawns new cars, coins, or powerups depending on a random number
+    // DESCRIPTION: spawns new cars, coins, or powerups depending on a random
+    // number (unless player is utilizing their "dash" powerup - only spawn coins
+    // then)
     public void spawnEntities() { // PARAMETERS: none
         Random random = new Random();
         int rand = random.nextInt(100);
         int[] xCar = { 90, 170, 250, 330 }; // x pos needed for each lane (accurate for cars)
 
-        // if random # generated is 59, spawn a new car
-        if (rand == 59) {
-            int randSpeed;
+        // if user is NOT dashing:
+        if (dashTime == 100) {
+            // if random # generated is 59, spawn a new car
+            if (rand == 59) {
+                int randSpeed;
 
-            // generate a random # between 0-3 (inclusive) for both rand and randSpeed until
-            // randSpeed != 0 (speed of enemy cars CANNOT be 0)
-            do {
+                // generate a random # between 0-3 (inclusive) for both rand and randSpeed until
+                // randSpeed != 0 (speed of enemy cars CANNOT be 0)
+                do {
+                    rand = random.nextInt(4); // for x pos
+                    randSpeed = random.nextInt(4); // for speed of the car
+                } while (randSpeed == 0);
+
+                Car newCar = new Car(cars.get(random.nextInt(12)), xCar[rand], -250, randSpeed);
+                // spawn new car if it doesn't collide with any existing enemy cars
+                if (!newCar.collides(enemies))
+                    enemies.add(newCar);
+            }
+
+            // if random # generated is 9, spawn a new coin
+            else if (rand == 9) {
                 rand = random.nextInt(4); // for x pos
-                randSpeed = random.nextInt(4); // for speed of the car
-            } while (randSpeed == 0);
+                gameCoins.add(new Coin(xCar[rand] + 20, -200));
+            }
 
-            Car newCar = new Car(cars.get(random.nextInt(cars.size())), xCar[rand], -250, randSpeed);
+            // generate a # between 0-399 (inclusive) and spawn a powerup only if it is ==59
+            // (0-399 <- wider range = lower likelihood for powerups to be spawned)
+            rand = random.nextInt(400);
+            if (rand == 59) {
+                rand = random.nextInt(2); // for powerup type
 
-            // spawn new car if it doesn't collide with any existing enemy cars
-            if (!newCar.collides(enemies))
-                enemies.add(newCar);
+                ArrayList<String> powerUpTypes = new ArrayList<>(powerUps.keySet());
+                String powerUpType = powerUpTypes.get(rand);
+
+                rand = random.nextInt(4); // for x pos
+
+                // spawn the new powerup only if
+                // 1. the player does not already have or is utilizing it
+                // 2. the amount of powerups displayed in the game is currently less than 1
+                if (!powerUps.get(powerUpType) && gamePowerUps.size() < 1) {
+                    gamePowerUps.add(new PowerUp(powerUpType, xCar[rand] + 15, -200));
+                }
+            }
         }
-
-        // if random # generated is 9, spawn a new coin
-        else if (rand == 9) {
+        // if the player IS dashing (not ending soon) and the random # generated is
+        // between the exclusive range of 30-60, spawn a new coin
+        else if (rand > 30 && rand < 60 && dashTime > 20) {
             rand = random.nextInt(4); // for x pos
             gameCoins.add(new Coin(xCar[rand] + 20, -200));
-        }
-
-        // generate a # between 0-299 (inclusive) and spawn a powerup only if it is ==59
-        // (0-299 <- wider range = lower likelihood for powerups to be spawned)
-        rand = random.nextInt(300);
-        if (rand == 59) {
-            rand = random.nextInt(2); // for powerup type
-
-            ArrayList<String> powerUpTypes = new ArrayList<>(powerUps.keySet());
-            String powerUpType = powerUpTypes.get(rand);
-
-            rand = random.nextInt(4); // for x pos
-
-            // spawn the new powerup only if
-            // 1. the player does not already have or is utilizing it
-            // 2. the amount of powerups displayed in the game is currently less than 1
-            if (!powerUps.get(powerUpType) && gamePowerUps.size() < 1) {
-                gamePowerUps.add(new PowerUp(powerUpType, xCar[rand] + 15, -200));
-            }
         }
         // RETURNS: none (void method)
     }
@@ -455,6 +468,19 @@ public class Main extends JPanel implements Runnable, KeyListener {
             cars.add(ImageIO.read(new File("assets/cars/red-car-with-white-stripes.png")));
             cars.add(ImageIO.read(new File("assets/cars/police-car.png")));
 
+            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-rusty-white-van.png")));
+            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-white-van.png")));
+            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-blue-car.png")));
+            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-red-car.png")));
+            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-yellow-car.png")));
+            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-gray-car.png")));
+            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-yellow-cab.png")));
+            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-white-truck.png")));
+            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-red-truck.png")));
+            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-school-bus.png")));
+            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-red-car-with-white-stripes.png")));
+            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-police-car.png")));
+
             smallCars.add(ImageIO.read(new File("assets/cars/small/white-truck.png")));
             smallCars.add(ImageIO.read(new File("assets/cars/small/red-truck.png")));
             smallCars.add(ImageIO.read(new File("assets/cars/small/school-bus.png")));
@@ -479,6 +505,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
         // initializes the powerups and their "acquired"/"utilizing" statuses
         powerUps.put("dash", false);
         powerUps.put("doubleCoins", false);
+        powerUps.put("invincibility", false);
 
         // reads info from stats.txt and initializes the # of coins, player's car, etc.
         try {
@@ -655,13 +682,13 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
         // displays, operates, and executes the game if state is 5
         else if (state == 5) {
-
-            // if player collides with an enemy, update highscores.txt and transition to the
-            // GAMEOVER state
-            if (player.collides(enemies)) {
-                saveScore(score);
-                state = 7;
-            }
+            // if player collides with an enemy while NOT invincible, update highscores.txt
+            // and transition to the GAMEOVER state
+            if (invincibilityTime == 400)
+                if (player.collides(enemies)) {
+                    saveScore(score);
+                    state = 7;
+                }
             // ensure that enemies do NOT collide into eachother
             Car.enemyCollides(enemies);
 
@@ -670,11 +697,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             powerUpsCollision();
 
             // spawns new enemies (cars), coins, and powerups
-            // (unless player is utilizing their "dash" powerup)
-            if (dashTime == 100) {
-                spawnEntities();
-                System.out.println("hi");
-            }
+            spawnEntities();
 
             // displays the enemies, coins, and powerups
             // (and removes the entities out of bounds)
@@ -694,9 +717,18 @@ public class Main extends JPanel implements Runnable, KeyListener {
             // decrease its remaining time and display its 2x bar
             if (powerUps.get("doubleCoins")) {
                 doubleCoinsTime--;
-                g.drawString("2X COINS", 40, 590);
-                g.fillRect(50, 600, doubleCoinsTime / 2, 10);
-                g.drawRect(40, 595, 420, 20);
+
+                // display at varying positions depending on if the invincibility powerup is
+                // ALSO active
+                if (powerUps.get("invincibility") && doubleCoinsTime > (invincibilityTime * 2)) {
+                    g.drawString("2X COINS", 40, 530);
+                    g.fillRect(50, 540, doubleCoinsTime / 2, 10);
+                    g.drawRect(40, 535, 420, 20);
+                } else {
+                    g.drawString("2X COINS", 40, 590);
+                    g.fillRect(50, 600, doubleCoinsTime / 2, 10);
+                    g.drawRect(40, 595, 420, 20);
+                }
 
                 if (doubleCoinsTime == 0) { // if the double coins powerup has reached its time limit, set the "double
                                             // coins" powerup to inactive again and reset its remaining time
@@ -732,6 +764,44 @@ public class Main extends JPanel implements Runnable, KeyListener {
                         }
                         dashTime--;
                     }
+                }
+            }
+
+            // if the invincibility powerup is currently active,
+            // decrease its remaining time and display its invinsibility bar
+            if (powerUps.get("invincibility")) {
+                invincibilityTime--;
+                player.setCarImage(cars.get(playerIndex + 12));
+
+                // display at varying positions depending on if the double
+                // coins powerup is ALSO active
+                if (powerUps.get("doubleCoins") && (invincibilityTime * 2) > doubleCoinsTime) {
+                    g.drawString("INVINCIBILITY", 40, 530);
+                    g.fillRect(50, 530, invincibilityTime, 10);
+                    g.drawRect(40, 525, 420, 20);
+                } else {
+                    g.drawString("INVINCIBILITY", 40, 590);
+                    g.fillRect(50, 600, invincibilityTime, 10);
+                    g.drawRect(40, 595, 420, 20);
+                }
+
+                // alter between the transparent and default images of the player's car prior to
+                // ending the invincibility powerup (flashing intended to warn the player)
+                if ((invincibilityTime <= 100 && invincibilityTime >= 83)
+                        || (invincibilityTime <= 66 && invincibilityTime >= 49)
+                        || (invincibilityTime <= 32 && invincibilityTime >= 16))
+                    player.setCarImage(cars.get(playerIndex));
+                else if (invincibilityTime <= 83 && invincibilityTime >= 66
+                        || (invincibilityTime <= 49 && invincibilityTime > 32)
+                        || (invincibilityTime <= 16 && invincibilityTime > 0))
+                    player.setCarImage(cars.get(playerIndex + 12));
+
+                else if (invincibilityTime == 0) { // if the invincibility powerup has reached its time limit, set the
+                    // "invincibility" powerup to inactive again, reset its remaining time,
+                    // and revert back to the original car's bufferedimage
+                    powerUps.put("invincibility", false);
+                    invincibilityTime = 400;
+                    player.setCarImage(cars.get(playerIndex));
                 }
             }
 
@@ -903,7 +973,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
             // if the player activates the "dash" powerup, note the original speed and note
             // its initiation (by setting dashTime to 99)
-            if (e.getKeyCode() == KeyEvent.VK_SHIFT && dashTime == 100) {
+            if (e.getKeyCode() == KeyEvent.VK_SHIFT && dashTime == 100 && powerUps.get("dash")) {
                 dashTime = 99;
                 originalSpeed = speed;
             }

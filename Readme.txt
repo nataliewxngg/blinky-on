@@ -6,7 +6,6 @@ Blinky-ON is a dynamic, pausable single player game that utilizes the
 arrow keys to navigate a high-speed car through busy one-way traffic.
 
 HINTS:
-- Tap on the up/down arrow keys to speed up/down rather than holding it!
 - Leave extra space between the corners of the cars when maneuvering to avoid 
   collision! (due to image's width and height)
 - Utilizing a car with a higher steering speed is not always better!
@@ -14,7 +13,7 @@ HINTS:
   a slower car in front of it. Drive CAREFULLY and beware of this!
 - The DASH powerup may be beneficial but risky! 
   A vehicle may be in front of you but out of your line of sight - Use at your own risk! 
-  (NOT A BUG - the DASH powerup would have been seemingly useless/boring without it)
+  (NOT A "BUG MADE FEATURE"!!!! - the DASH powerup would have been too overpowered without it)
 
 FUNCTIONALITIES MISSING FROM INITIAL PROPOSAL: 
 - The modifiability of the navigation keys were NOT applied
@@ -34,4 +33,5 @@ KNOWN BUGS/ERRORS:
 IMPORTANT INFORMATION:
 - Uncomment the .drawRect(...) line I incorporated (and noted) in Main.java to play/mark
   my game with visible hitboxes!
+- Be sure to TAP the up/down arrow keys to speed up/slow down rather than HOLDING them!
 - Have fun :)
