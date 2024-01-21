@@ -14,6 +14,7 @@ HINTS:
 - The DASH powerup may be beneficial but risky! 
   A vehicle may be in front of you but out of your line of sight - Use at your own risk! 
   (NOT A "BUG MADE FEATURE"!!!! - the DASH powerup would have been too overpowered without it)
+- Try to go FAST so that cars won't cluster at the top!
 
 FUNCTIONALITIES MISSING FROM INITIAL PROPOSAL: NONE!!!!!!
 
@@ -23,6 +24,7 @@ ADDITIONAL FUNCTIONALITIES:
 - Implementation of the toggleable hitbox and SFX settings! 
   (and the entire settings menu - I only realized one day before the deadline that 
   I promised to incorporate this in my initial proposal...)
+- All-inclusive sound effects!
 
 KNOWN BUGS/ERRORS:
 - Enemy cars may flicker from time to time. 

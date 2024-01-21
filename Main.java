@@ -57,16 +57,17 @@ public class Main extends JPanel implements Runnable, KeyListener {
     // stores the y positions for each state of the arrow in the settings
     int[] settingsArrowStates = { 435, 452, 470, 485, 502, 520 };
     int settingsArrowState = 1;
+
     Boolean keyListening = false;
     String hitboxes;
     String sfx;
 
     Font font = new Font("Press Start 2P", Font.PLAIN, 20);
-    Font smallFont = new Font("Press Start 2P", Font.PLAIN, 13); // used for store/marketplace (state #1) and past
-                                                                 // highscores (state #2)
+    Font smallFont = new Font("Press Start 2P", Font.PLAIN, 13); // used for store/marketplace (state #1), past
+                                                                 // highscores (state #2), and settings (state #8)
 
-    ArrayList<BufferedImage> cars = new ArrayList<>();
-    ArrayList<BufferedImage> smallCars = new ArrayList<>(); // used for store/marketplace only
+    BufferedImage[] cars = new BufferedImage[24];
+    BufferedImage[] smallCars = new BufferedImage[3]; // used for store/marketplace only
 
     // stores the status ('l'-locked, 'u'-unlocked, 'e'-equipped), costs, and
     // steering speeds of each car (in the store/marketplace)
@@ -75,11 +76,13 @@ public class Main extends JPanel implements Runnable, KeyListener {
     int[] handlings = new int[12];
 
     Car player;
-    int playerIndex;
-    int selected;
+    int playerIndex, selected;
     Boolean boughtFailed = false;
 
     int score = 0;
+    Boolean newTopTen;
+    static int highScore;
+    static int oldScore;
     int coins;
 
     // speed in relation to score
@@ -101,7 +104,6 @@ public class Main extends JPanel implements Runnable, KeyListener {
     Boolean rightPressed = false;
     Boolean upPressed = false;
     Boolean downPressed = false;
-
     int rightControl, leftControl, upControl, downControl;
     String rightControlText, leftControlText, upControlText, downControlText;
 
@@ -119,7 +121,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
     // (utilized to PREPARE FOR A NEW GAME or RETURN TO THE MAIN MENU)
     public void resetVars() { // PARAMETERS: none
 
-        player = new Car(cars.get(playerIndex), 250, 700, 0); // resets player's position
+        player = new Car(cars[playerIndex], 250, 700, 0); // resets player's position
 
         // clears all the enemies, coins, and powerups from the game
         enemies.clear();
@@ -131,15 +133,16 @@ public class Main extends JPanel implements Runnable, KeyListener {
         powerUps.put("doubleCoins", false);
         powerUps.put("invincibility", false);
 
-        player.setCarImage(cars.get(playerIndex));
+        player.setCarImage(cars[playerIndex]);
 
         doubleCoinsTime = 800;
         invincibilityTime = 400;
         dashTime = 100;
+
         score = 0;
         speed = arrowState = 1;
 
-        rightPressed = leftPressed = upPressed = downPressed = false;
+        rightPressed = leftPressed = upPressed = downPressed = newTopTen = false;
 
         // RETURNS: none (void method)
     }
@@ -176,22 +179,18 @@ public class Main extends JPanel implements Runnable, KeyListener {
         // RETURNS: none (void method)
     }
 
-    //
-    //
-    //
-    //
-    //
-    //
-    // COMMENT HERE
-    //
-    //
-    //
-    public static String getSettings() {
+    // DESCRIPTION: returns a string utilized for the settings (state #8) by
+    // accessing the data in settings.txt
+    public static String getSettings() { // PARAMETERS: none
         String out = "";
+
+        // accesses settings.txt and accumulates its navigation keybinds (keytext) as
+        // well as the on/off statuses of hitboxes and sfx into an output string
         try {
             BufferedReader in = new BufferedReader(new FileReader("settings.txt"));
             String[] labels = { "STEER RIGHT  ", "STEER LEFT   ", "SPEED UP     ", "SLOW DOWN    " };
 
+            // keytext of the navigation keybinds
             for (int i = 0; i < 8; i++) {
                 if (i < 4)
                     in.readLine();
@@ -200,38 +199,49 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 }
             }
 
+            // on/off statuses of hitboxes/sfx
             out += "HITBOXES     " + in.readLine() + "\n";
             out += "SFX          " + in.readLine();
 
             in.close();
-            return out;
-        } catch (IOException e) {
+        } catch (IOException e) { // if settings.txt is missing, let the user know in the terminal
             System.out.println("settings.txt is missing!");
         }
+
+        // RETURNS: the final string utilized for the settings
         return out;
     }
 
-    public void updateSettings() {
+    // DESCRIPTION: updates settings.txt with the game's current/new settings
+    public void updateSettings() { // PARAMETERS: none
+
+        // rewrites the settings.txt with the new navigation keycodes, keytexts, and
+        // on/off statuses of the hitboxes and sound effects
         try {
             PrintWriter out = new PrintWriter(new FileWriter("settings.txt"));
 
+            // navigation keycodes
             out.println(rightControl);
             out.println(leftControl);
             out.println(upControl);
             out.println(downControl);
 
+            // navigation keytexts
             out.println(KeyEvent.getKeyText(rightControl));
             out.println(KeyEvent.getKeyText(leftControl));
             out.println(KeyEvent.getKeyText(upControl));
             out.println(KeyEvent.getKeyText(downControl));
 
+            // on/off statuses of hitboxes + sfx
             out.println(hitboxes);
             out.println(sfx);
 
             out.close();
-        } catch (IOException e) {
+        } catch (IOException e) { // if settings.txt is missing, let the user know in the terminal
             System.out.println("settings.txt is missing!");
         }
+
+        // RETURNS: none (void method)
     }
 
     // DESCRIPTION: checks if player has collided with a coin and accumulates to
@@ -274,6 +284,8 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 // (by setting it to true in the powerUps map) and remove it from the game
                 powerUps.put(powerup.getPowerUpType(), true);
                 gamePowerUps.remove(i);
+                if (sfx.equals("On")) // play collect power up sound effect if sfx toggled on
+                    playMusic("assets/powerUp.wav", false);
             }
         }
 
@@ -311,8 +323,9 @@ public class Main extends JPanel implements Runnable, KeyListener {
         return output; // RETURNS: a String of the top 10 highscores
     }
 
-    // DESCRIPTION: utilizes new score to update the highscores.txt file
-    public static void saveScore(int score) { // PARAMETER: new score
+    // DESCRIPTION: utilizes new score to update the highscores.txt file and return
+    // a boolean indicating whether or not a new top 10 highscore was made!
+    public static boolean saveScore(int score) { // PARAMETER: new score
         try {
             BufferedReader in = new BufferedReader(new FileReader("highscores.txt"));
             String s;
@@ -323,10 +336,11 @@ public class Main extends JPanel implements Runnable, KeyListener {
             while ((s = in.readLine()) != null)
                 scores.add(Integer.parseInt(s));
             scores.add(score);
+            oldScore = score;
             in.close();
 
-            // sort the arraylist into ASCENDING order
             Collections.sort(scores);
+            highScore = scores.get(scores.size() - 1); // set highscore
 
             // rewrites the highscores.txt file with the new scores by extracting the
             // highest to lowest scores (last to first index)
@@ -334,12 +348,18 @@ public class Main extends JPanel implements Runnable, KeyListener {
             for (int i = 0; i < 10; i++)
                 if (!scores.isEmpty())
                     out.println(scores.remove(scores.size() - 1));
+
             out.close();
+            // RETURNS: if score IS a new top 10 highscore (indicated by its presence in the
+            // arraylist), return true
+            if (Collections.binarySearch(scores, score) < 0)
+                return true;
+
         } catch (IOException e) { // if highscores.txt is missing, let the user know in the terminal
             System.out.println("highscores.txt missing!");
         }
 
-        // RETURNS: none (void method)
+        return false; // RETURNS: false if score is NOT a new top 10 highscore
     }
 
     // DESCRIPTION: spawns new cars, coins, or powerups depending on a random
@@ -363,7 +383,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
                     randSpeed = random.nextInt(4); // for speed of the car
                 } while (randSpeed == 0);
 
-                Car newCar = new Car(cars.get(random.nextInt(12)), xCar[rand], -250, randSpeed);
+                Car newCar = new Car(cars[random.nextInt(12)], xCar[rand], -240, randSpeed);
                 // spawn new car if it doesn't collide with any existing enemy cars
                 if (!newCar.collides(enemies))
                     enemies.add(newCar);
@@ -379,7 +399,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             // (0-399 <- wider range = lower likelihood for powerups to be spawned)
             rand = random.nextInt(400);
             if (rand == 59) {
-                rand = random.nextInt(2); // for powerup type
+                rand = random.nextInt(3); // for powerup type
 
                 ArrayList<String> powerUpTypes = new ArrayList<>(powerUps.keySet());
                 String powerUpType = powerUpTypes.get(rand);
@@ -387,7 +407,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 rand = random.nextInt(4); // for x pos
 
                 // spawn the new powerup only if
-                // 1. the player does not already have or is utilizing it
+                // 1. the player does not already have it
                 // 2. the amount of powerups displayed in the game is currently less than 1
                 if (!powerUps.get(powerUpType) && gamePowerUps.size() < 1) {
                     gamePowerUps.add(new PowerUp(powerUpType, xCar[rand] + 15, -200));
@@ -424,11 +444,12 @@ public class Main extends JPanel implements Runnable, KeyListener {
             }
         }
 
-        // displays the enemeis and removes the ones out of bounds
-        // (displays the hitboxes of the cars as well if hitboxes is toggled in
-        // settings)
+        // displays the enemies (from left -> right) and removes the
+        // ones out of bounds (displays the hitboxes of the cars as well if hitboxes is
+        // toggled in settings)
+        Collections.sort(enemies, new SortByX());
         for (int i = 0; i < enemies.size(); i++) {
-            if (enemies.get(i).getY() > 700) {
+            if (enemies.get(i).getY() > 700 || enemies.get(i).getY() < -280) {
                 enemies.remove(i);
             } else {
                 if (hitboxes.equals("On"))
@@ -533,35 +554,35 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
             bgHeight = bg.getHeight();
 
-            cars.add(ImageIO.read(new File("assets/cars/rusty-white-van.png")));
-            cars.add(ImageIO.read(new File("assets/cars/white-van.png")));
-            cars.add(ImageIO.read(new File("assets/cars/blue-car.png")));
-            cars.add(ImageIO.read(new File("assets/cars/red-car.png")));
-            cars.add(ImageIO.read(new File("assets/cars/yellow-car.png")));
-            cars.add(ImageIO.read(new File("assets/cars/gray-car.png")));
-            cars.add(ImageIO.read(new File("assets/cars/yellow-cab.png")));
-            cars.add(ImageIO.read(new File("assets/cars/white-truck.png")));
-            cars.add(ImageIO.read(new File("assets/cars/red-truck.png")));
-            cars.add(ImageIO.read(new File("assets/cars/school-bus.png")));
-            cars.add(ImageIO.read(new File("assets/cars/red-car-with-white-stripes.png")));
-            cars.add(ImageIO.read(new File("assets/cars/police-car.png")));
+            cars[0] = (ImageIO.read(new File("assets/cars/rusty-white-van.png")));
+            cars[1] = (ImageIO.read(new File("assets/cars/white-van.png")));
+            cars[2] = (ImageIO.read(new File("assets/cars/blue-car.png")));
+            cars[3] = (ImageIO.read(new File("assets/cars/red-car.png")));
+            cars[4] = (ImageIO.read(new File("assets/cars/yellow-car.png")));
+            cars[5] = (ImageIO.read(new File("assets/cars/gray-car.png")));
+            cars[6] = (ImageIO.read(new File("assets/cars/yellow-cab.png")));
+            cars[7] = (ImageIO.read(new File("assets/cars/white-truck.png")));
+            cars[8] = (ImageIO.read(new File("assets/cars/red-truck.png")));
+            cars[9] = (ImageIO.read(new File("assets/cars/school-bus.png")));
+            cars[10] = (ImageIO.read(new File("assets/cars/red-car-with-white-stripes.png")));
+            cars[11] = (ImageIO.read(new File("assets/cars/police-car.png")));
 
-            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-rusty-white-van.png")));
-            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-white-van.png")));
-            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-blue-car.png")));
-            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-red-car.png")));
-            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-yellow-car.png")));
-            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-gray-car.png")));
-            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-yellow-cab.png")));
-            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-white-truck.png")));
-            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-red-truck.png")));
-            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-school-bus.png")));
-            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-red-car-with-white-stripes.png")));
-            cars.add(ImageIO.read(new File("assets/cars/transparent/transparent-police-car.png")));
+            cars[12] = (ImageIO.read(new File("assets/cars/transparent/transparent-rusty-white-van.png")));
+            cars[13] = (ImageIO.read(new File("assets/cars/transparent/transparent-white-van.png")));
+            cars[14] = (ImageIO.read(new File("assets/cars/transparent/transparent-blue-car.png")));
+            cars[15] = (ImageIO.read(new File("assets/cars/transparent/transparent-red-car.png")));
+            cars[16] = (ImageIO.read(new File("assets/cars/transparent/transparent-yellow-car.png")));
+            cars[17] = (ImageIO.read(new File("assets/cars/transparent/transparent-gray-car.png")));
+            cars[18] = (ImageIO.read(new File("assets/cars/transparent/transparent-yellow-cab.png")));
+            cars[19] = (ImageIO.read(new File("assets/cars/transparent/transparent-white-truck.png")));
+            cars[20] = (ImageIO.read(new File("assets/cars/transparent/transparent-red-truck.png")));
+            cars[21] = (ImageIO.read(new File("assets/cars/transparent/transparent-school-bus.png")));
+            cars[22] = (ImageIO.read(new File("assets/cars/transparent/transparent-red-car-with-white-stripes.png")));
+            cars[23] = (ImageIO.read(new File("assets/cars/transparent/transparent-police-car.png")));
 
-            smallCars.add(ImageIO.read(new File("assets/cars/small/white-truck.png")));
-            smallCars.add(ImageIO.read(new File("assets/cars/small/red-truck.png")));
-            smallCars.add(ImageIO.read(new File("assets/cars/small/school-bus.png")));
+            smallCars[0] = (ImageIO.read(new File("assets/cars/small/white-truck.png")));
+            smallCars[1] = (ImageIO.read(new File("assets/cars/small/red-truck.png")));
+            smallCars[2] = (ImageIO.read(new File("assets/cars/small/school-bus.png")));
         } catch (IOException e) { // prints stack trace if any image(s) is/are missing
             e.printStackTrace();
         }
@@ -593,7 +614,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             coins = Integer.parseInt(in.readLine());
 
             playerIndex = selected = Integer.parseInt(in.readLine());
-            player = new Car(cars.get(playerIndex), 250, 700, 0);
+            player = new Car(cars[playerIndex], 250, 700, 0);
 
             // intializes the statuses (locked, unlocked, equipped), costs, and steering
             // speeds of ALL cars
@@ -602,7 +623,6 @@ public class Main extends JPanel implements Runnable, KeyListener {
                     status[i] = in.readLine().charAt(0);
                 else if (i < 24) {
                     costs[i - 12] = Integer.parseInt(in.readLine());
-                    System.out.println(costs[i - 12]);
                 } else if (i < 36)
                     handlings[i - 24] = Integer.parseInt(in.readLine());
             }
@@ -611,19 +631,22 @@ public class Main extends JPanel implements Runnable, KeyListener {
             System.out.println("stats.txt is missing!");
         }
 
-        // reads info from settings.txt and initializes the right+left+up+down controls
+        // reads info from settings.txt and initializes the navigation controls
         // and the activity of hitboxes + music
         try {
             BufferedReader in = new BufferedReader(new FileReader("settings.txt"));
 
+            // sets respective controls to its navigation keycode
             rightControl = Integer.parseInt(in.readLine());
             leftControl = Integer.parseInt(in.readLine());
             upControl = Integer.parseInt(in.readLine());
             downControl = Integer.parseInt(in.readLine());
 
+            // skips the navigation keytexts
             for (int i = 0; i < 4; i++)
                 in.readLine();
 
+            // on/off statuses of hitboxes/sfx
             hitboxes = in.readLine();
             sfx = in.readLine();
 
@@ -715,9 +738,9 @@ public class Main extends JPanel implements Runnable, KeyListener {
             // if the user is inspecting a large vehicle in the shop,
             // use the smaller images to save space
             if (selected != 7 && selected != 8 && selected != 9)
-                g.drawImage(cars.get(selected), 160, 380, null);
+                g.drawImage(cars[selected], 160, 380, null);
             else
-                g.drawImage(smallCars.get(selected - 7), 170, 365, null);
+                g.drawImage(smallCars[selected - 7], 170, 365, null);
 
             // display the status of the car selected (locked, unlocked, equipped)
             if (status[selected] == 'e') {
@@ -782,11 +805,14 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
         // displays, operates, and executes the game if state is 5
         else if (state == 5) {
-            // if player collides with an enemy while NOT invincible, update highscores.txt
-            // and transition to the GAMEOVER state
+            // if player collides with an enemy while NOT invincible, update highscores.txt,
+            // determine if the new score is a top 10 highscore, and transition to
+            // the GAMEOVER state
             if (invincibilityTime == 400)
                 if (player.collides(enemies)) {
-                    saveScore(score);
+                    if (sfx.equals("On")) // play crash sound effect if sfx toggled on
+                        playMusic("assets/crash.wav", false);
+                    newTopTen = saveScore(score);
                     state = 7;
                 }
             // ensure that enemies do NOT collide into eachother
@@ -839,10 +865,12 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
             // if the player has obtained/is utilizing the "dash" powerup:
             if (powerUps.get("dash")) {
-                // if the player has not yet initiated it, display the dash powerup by the
-                // right-hand side
-                if (dashTime == 100)
-                    g.drawImage(dash, 450, 590, null);
+                // if the player has not yet initiated it, display the dash powerup (and
+                // "SHIFT") by the right-hand side
+                if (dashTime == 100) {
+                    g.drawImage(dash, 445, 102, null);
+                    g.drawString("SHIFT", 385, 100);
+                }
 
                 // if the player has initiated it, speed up the other components
                 // in a quadratic pattern so that the animation appears smooth.
@@ -871,7 +899,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
             // decrease its remaining time and display its invinsibility bar
             if (powerUps.get("invincibility")) {
                 invincibilityTime--;
-                player.setCarImage(cars.get(playerIndex + 12));
+                player.setCarImage(cars[playerIndex + 12]);
 
                 // display at varying positions depending on if the double
                 // coins powerup is ALSO active
@@ -890,18 +918,18 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 if ((invincibilityTime <= 100 && invincibilityTime >= 83)
                         || (invincibilityTime <= 66 && invincibilityTime >= 49)
                         || (invincibilityTime <= 32 && invincibilityTime >= 16))
-                    player.setCarImage(cars.get(playerIndex));
+                    player.setCarImage(cars[playerIndex]);
                 else if (invincibilityTime <= 83 && invincibilityTime >= 66
                         || (invincibilityTime <= 49 && invincibilityTime > 32)
                         || (invincibilityTime <= 16 && invincibilityTime > 0))
-                    player.setCarImage(cars.get(playerIndex + 12));
+                    player.setCarImage(cars[playerIndex + 12]);
 
                 else if (invincibilityTime == 0) { // if the invincibility powerup has reached its time limit, set the
                     // "invincibility" powerup to inactive again, reset its remaining time,
                     // and revert back to the original car's bufferedimage
                     powerUps.put("invincibility", false);
                     invincibilityTime = 400;
-                    player.setCarImage(cars.get(playerIndex));
+                    player.setCarImage(cars[playerIndex]);
                 }
             }
 
@@ -933,34 +961,33 @@ public class Main extends JPanel implements Runnable, KeyListener {
 
             // displays the gameover screen if state is 7
             else {
+                g.setFont(smallFont);
+
                 g.drawImage(gameOver, 0, 0, null);
+                g.drawString("SCORE: " + oldScore, 180, 300);
+                g.drawString("HIGH SCORE: " + highScore, 140, 320);
+
+                if (newTopTen) // if the new score is a top 10 highscore, acknowledge (display) it
+                    g.drawString("NEW TOP 10 HIGHSCORE!", 120, 340);
             }
         }
 
-        //
-        //
-        //
-        //
-        //
-        //
-        // COMMENT HERE
-        //
-        //
-        //
+        // displays the settings (keybinds + on/off statuses of hitboxes+sfx) if in
+        // settings state
         else if (state == 8) {
             g.drawImage(settings, 0, 0, null);
-            g.setFont(smallFont);
+            g.setFont(smallFont); // sets and uses the smaller font
+            g.drawString(">", 115, settingsArrowStates[settingsArrowState - 1]); // draw the settings arrow
 
-            g.drawString(">", 115, settingsArrowStates[settingsArrowState - 1]);
-
+            // gets a String of the settings information and displays them using
+            // appropriate formatting (improvised due to .printf's incompatibility with
+            // .drawString())
             String s = getSettings();
             int n = 435;
-
             for (String x : s.split("\n")) {
                 g.drawString(x, 140, n);
                 n += 17;
             }
-
         }
 
         // RETURNS: none (void method)
@@ -973,19 +1000,27 @@ public class Main extends JPanel implements Runnable, KeyListener {
         if (state == 0) {
             // if player pressed the DOWN ARROW, increase the arrow state UNLESS it is
             // already at its maximum (return back to first arrow state in this case)
-            if (e.getKeyCode() == KeyEvent.VK_DOWN)
+            if (e.getKeyCode() == KeyEvent.VK_DOWN) {
                 if (arrowState == 6)
                     arrowState = 1;
                 else
                     arrowState++;
 
+                if (sfx.equals("On")) // play tapping sound effect if sfx is toggled ON
+                    playMusic("assets/tap.wav", false);
+            }
+
             // if player pressed the UP ARROW, decrease the arrow state UNLESS it is
             // already at its minimum (return back to last arrow state in this case)
-            else if (e.getKeyCode() == KeyEvent.VK_UP)
+            else if (e.getKeyCode() == KeyEvent.VK_UP) {
                 if (arrowState == 1)
                     arrowState = 6;
                 else
                     arrowState--;
+
+                if (sfx.equals("On")) // play tapping sound effect if sfx is toggled ON
+                    playMusic("assets/tap.wav", false);
+            }
 
             // if player pressed the enter key, enter the respective state depending on
             // where the arrow was pointed
@@ -1032,7 +1067,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 if (status[selected] != 'l') {
                     boughtFailed = false;
                     playerIndex = selected;
-                    player = new Car(cars.get(playerIndex), player.getX(), player.getY(), 0);
+                    player = new Car(cars[playerIndex], player.getX(), player.getY(), 0);
 
                     for (int i = 0; i < 12; i++) {
                         if (status[i] == 'e')
@@ -1068,16 +1103,22 @@ public class Main extends JPanel implements Runnable, KeyListener {
                     selected--;
                 else
                     selected = 11;
+
+                if (sfx.equals("On")) // play tapping sound effect if sfx is toggled ON
+                    playMusic("assets/tap.wav", false);
             } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
                 boughtFailed = false;
                 if (!(selected == 11))
                     selected++;
                 else
                     selected = 0;
+
+                if (sfx.equals("On")) // play tapping sound effect if sfx is toggled ON
+                    playMusic("assets/tap.wav", false);
             }
         }
 
-        // if game is in state 2/3/4/8 - highscores/instructions/about:
+        // if game is in state 2/3/4 - highscores/instructions/about:
         else if (state == 2 || state == 3 || state == 4) {
             // if user presses enter, return to main menu
             if (e.getKeyCode() == KeyEvent.VK_ENTER)
@@ -1104,11 +1145,13 @@ public class Main extends JPanel implements Runnable, KeyListener {
             if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
                 state = 6;
 
-            // if the player activates the "dash" powerup, note the original speed and note
+            // if the player activates the "dash" powerup, note the original speed and
             // its initiation (by setting dashTime to 99)
             if (e.getKeyCode() == KeyEvent.VK_SHIFT && dashTime == 100 && powerUps.get("dash")) {
                 dashTime = 99;
                 originalSpeed = speed;
+                if (sfx.equals("On")) // play dash sound effect if sound effects are toggled ON
+                    playMusic("assets/dash.wav", false);
             }
 
         }
@@ -1152,23 +1195,17 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 state = 5;
             }
         }
-        //
-        //
-        //
-        //
-        //
-        ///
-        ///
-        //
-        //
-        //
-        //
-        //
+
+        // if the user is in state 8 - settings:
         else if (state == 8) {
+            // if the user is NOT currently listening for a key (for keybinds purposes) and
+            // presses the enter key, return back to the main menu - also set state of
+            // settings arrow back to default (1)
             if (!keyListening)
-                // if the user presses the enter key, return back to the main menu
-                if (e.getKeyCode() == KeyEvent.VK_ENTER)
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    settingsArrowState = 1;
                     state = 0;
+                }
         }
 
         // RETURNS: none (void method)
@@ -1191,7 +1228,7 @@ public class Main extends JPanel implements Runnable, KeyListener {
         // if user is in state 5 only - in-game
         if (state == 5) {
 
-            // if the user releases the up/down arrow key,
+            // if the user releases the up/down control key,
             // speed up/slow down accordingly (since it's under keyReleased, the up/down
             // arrow keys must be TAPPED to alter speed)
 
@@ -1213,29 +1250,35 @@ public class Main extends JPanel implements Runnable, KeyListener {
                 }
             }
         }
-        //
-        //
-        //
-        //
-        //
-        //
-        // COMMENT HERE
-        //
-        //
-        //
+
+        // if user is in state 8 - settings
         else if (state == 8) {
+
+            // if the user is NOT currently listening for a key (for keybinds purposes) and
+            // 1. presses the up/down arrow keys, move the settings arrow
+            // up/down accordingly unless its already at its final state
+            // 2. presses the control key while arrow is pointing at a "keybind setting",
+            // turn on key listening
+            // 3. presses shift while arrow is pointing at hitboxes/sfx, toggle it to on/off
+            // accordingly
             if (!keyListening) {
                 if (e.getKeyCode() == KeyEvent.VK_DOWN) {
                     if (settingsArrowState == 6)
                         settingsArrowState = 1;
                     else
                         settingsArrowState++;
+
+                    if (sfx.equals("On")) // play tapping sound effect if sfx is toggled ON
+                        playMusic("assets/tap.wav", false);
                 }
                 if (e.getKeyCode() == KeyEvent.VK_UP) {
                     if (settingsArrowState == 1)
                         settingsArrowState = 6;
                     else
                         settingsArrowState--;
+
+                    if (sfx.equals("On")) // play tapping sound effect if sfx is toggled ON
+                        playMusic("assets/tap.wav", false);
                 }
                 if (e.getKeyCode() == KeyEvent.VK_CONTROL && (settingsArrowState >= 1 && settingsArrowState <= 4)) {
                     keyListening = true;
@@ -1246,13 +1289,18 @@ public class Main extends JPanel implements Runnable, KeyListener {
                         hitboxes = "Off";
                     else
                         hitboxes = "On";
+
                 } else if (e.getKeyCode() == KeyEvent.VK_SHIFT && settingsArrowState == 6) {
                     if (sfx.equals("On"))
                         sfx = "Off";
                     else
                         sfx = "On";
                 }
-            } else {
+            }
+            // if the user IS currently listening for a key (for keybinds purposes), set the
+            // pointed-at navigation control to the key pressed. then, turn off key listeing
+            // and update the settings.txt to correspond to the new settings
+            else {
                 if (settingsArrowState == 1) { // RIGHT
                     rightControl = e.getKeyCode();
                 } else if (settingsArrowState == 2) {

@@ -2,7 +2,7 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.util.*;
 
-public class Car {
+public class Car implements Comparable<Car> {
 
     // instance variables + data encapsulation
     private BufferedImage car;
@@ -22,6 +22,16 @@ public class Car {
         this.speed = speed;
 
         // RETURNS: none (constructors do not return any value)
+    }
+
+    // DESCRIPTION: utilized for the comparable interface - NATURAL SORTING ORDER!
+    // sorts Car objects in ascending order of their y positions when
+    // Collections.sort(...) is called
+    public int compareTo(Car c) { // PARAMETER: a Car object to compare to
+        return this.y - c.y; // RETURNS:
+                             // -# if this Car's y pos < the compared-to car's
+                             // 0 if this Car's y pos == the compared-to car's
+                             // +# if this Car's y pos > the compared-to car's
     }
 
     // DESCRIPTION: draws/renders this car object's bufferedimage onto the Graphics
@@ -58,6 +68,7 @@ public class Car {
                 return true; // RETURNS: true if this car collides with another car in the linkedlist
             }
         }
+
         return false; // RETURNS: false if this car does not collide with another car in the
                       // linkedlist
     }
@@ -66,14 +77,19 @@ public class Car {
     // (utilized to avoid collision in enemy cars)
     public static void enemyCollides(LinkedList<Car> cars) { // PARAMETERS: a linkedlist of cars
 
-        // traverses through ALL the cars in the linkedlist and - for each car - checks
-        // its proximity to EVERY other car included.
+        Collections.sort(cars); // sorts the Car objects in the linkedlist to be in ascending order of their y
+                                // positions (therefore, highest->lowest on screen)
 
-        // if its distance decreases to a certain measure (and if its not being compared
-        // to itself), adjust its speed to match the speed of the car ahead.
-        for (int i = 0; i < cars.size(); i++) {
-            for (int j = 0; j < cars.size(); j++) {
-                if (i != j && cars.get(i).y > cars.get(j).y && cars.get(i).y - 300 < cars.get(j).y
+        // traverses through ALL the cars starting at the second one (no cars ahead of
+        // first car) and checks - for each car - its proximity to the cars AHEAD of it
+        // (thus, checks with cars with lower index)
+
+        // if the distance between the current (i) car and the compared-to (j) car
+        // decreases to a certain measure, adjust its speed to match the
+        // speed of the car ahead. (speed of i = speed of j)
+        for (int i = 1; i < cars.size(); i++) {
+            for (int j = 0; j < i; j++) {
+                if (cars.get(i).y > cars.get(j).y && cars.get(i).y - 300 < cars.get(j).y
                         && cars.get(i).x == cars.get(j).x) {
                     cars.get(i).speed = cars.get(j).speed;
                 }
