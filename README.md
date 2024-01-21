@@ -1,6 +1,6 @@
 <div>
-  <img src="screenshots/menuSS.png" width="500">
-  <img src="screenshots/ingameSS.png" width="485">
+  <img src="screenshots/menuSS.png" width="400">
+  <img src="screenshots/ingameSS.png" width="388">
 </div>
 
 <h1>ICS4U ISU: Blinky-ON</h1>
