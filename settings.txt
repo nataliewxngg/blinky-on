@@ -6,5 +6,5 @@ Right
 Left
 Up
 Down
-On
+Off
 On
