@@ -9,12 +9,12 @@
 <p>Natalie Wong | January 21, 2024</p>
 
 Blinky-ON is a dynamic, pausable single-player game that utilizes the
-arrow keys to navigate a vehicle through busy one-way traffic. 
+arrow keys to navigate a vehicle through busy one-way traffic.
 It is developed using Java Swing and includes various intermediate concepts
-explored in ICS4U, such as OOP and dynamic data structures. 
+explored in ICS4U, such as OOP and dynamic data structures.
 
 <h3>Inspiration</h3>
-This ICS4U ICU project is heavily inspired by Traffic Racer, a mobile game developed and published by Skgames.
+This ICS4U ISU project is heavily inspired by Traffic Racer, a mobile game developed and published by Skgames.
 
 <h3>Instructions</h3>
 <ul>
